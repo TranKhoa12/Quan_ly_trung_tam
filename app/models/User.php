@@ -4,7 +4,7 @@ class User extends BaseModel
 {
     protected $table = 'users';
     protected $fillable = [
-        'username', 'password', 'full_name', 'email', 'phone', 'role', 'status'
+        'username', 'password', 'full_name', 'email', 'phone', 'address', 'role', 'status'
     ];
     protected $timestamps = false; // Tắt timestamps cho bảng users
 

@@ -46,11 +46,14 @@ $router->post('/forgot-password', 'Auth@forgotPassword');
 $router->get('/reset-password/{token}', 'Auth@showResetPassword');
 $router->post('/reset-password', 'Auth@resetPassword');
 $router->get('/dashboard', 'Dashboard@index');
+$router->get('/profile', 'Profile@index');
+$router->post('/profile/update', 'Profile@update');
 
 // Reports routes
 $router->get('/reports', 'Report@index');
 $router->get('/reports/create', 'Report@create');
 $router->post('/reports', 'Report@store');
+$router->post('/reports/delete-multiple', 'Report@deleteMultiple');
 $router->get('/reports/{id}', 'Report@show');
 $router->get('/reports/{id}/edit', 'Report@edit');
 $router->post('/reports/{id}/update', 'Report@update');
@@ -60,6 +63,7 @@ $router->post('/reports/{id}/delete', 'Report@delete');
 $router->get('/revenue', 'Revenue@index');
 $router->get('/revenue/create', 'Revenue@create');
 $router->post('/revenue', 'Revenue@store');
+$router->post('/revenue/delete-multiple', 'Revenue@deleteMultiple');
 $router->get('/revenue/check-receipt-code', 'Revenue@checkReceiptCode');
 $router->post('/revenue/processOCR', 'Revenue@processOCR');
 $router->get('/revenue/{id}', 'Revenue@show');
@@ -73,6 +77,12 @@ $router->post('/students', 'Student@store');
 $router->get('/certificates', 'Certificate@index');
 $router->get('/certificates/create', 'Certificate@create');
 $router->post('/certificates', 'Certificate@store');
+$router->post('/certificates/delete-multiple', 'Certificate@deleteMultiple');
+$router->get('/certificates/{id}', 'Certificate@show');
+$router->get('/certificates/{id}/edit', 'Certificate@edit');
+$router->post('/certificates/{id}/update', 'Certificate@update');
+$router->post('/certificates/{id}/status', 'Certificate@updateStatus');
+$router->post('/certificates/{id}/receive', 'Certificate@updateReceiveStatus');
 $router->put('/certificates/{id}/approve', 'Certificate@approve');
 
 // Staff management routes (Admin only)

@@ -123,7 +123,7 @@ ob_start();
                             <option value="">Tất cả hình thức</option>
                             <option value="cash" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'cash') ? 'selected' : '' ?>>Tiền mặt</option>
                             <option value="account_co_nhi" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'account_co_nhi') ? 'selected' : '' ?>>TK Cô Nhi</option>
-                            <option value="account_thay_hien" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'account_thay_hien') ? 'selected' : '' ?>>TK Thầy Hiền</option>
+                            <option value="account_thay_hien" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'account_thay_hien') ? 'selected' : '' ?>>TK Thầy Hiến</option>
                             <option value="account_company" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'account_company') ? 'selected' : '' ?>>TK Công ty</option>
                         </select>
                     </div>
@@ -173,7 +173,14 @@ ob_start();
                     <i class="fas fa-list text-primary me-2"></i>
                     Danh sách doanh thu
                 </h6>
-                <span class="badge bg-primary"><?= count($revenue_reports) ?> giao dịch</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary"><?= count($revenue_reports) ?> giao dịch</span>
+                    <?php if ($userRole === 'admin' && !empty($revenue_reports)): ?>
+                    <button type="button" class="btn btn-sm btn-danger" id="deleteSelectedBtn" style="display: none;" onclick="deleteSelected()">
+                        <i class="fas fa-trash me-1"></i>Xóa đã chọn (<span id="selectedCount">0</span>)
+                    </button>
+                    <?php endif; ?>
+                </div>
             </div>
             
             <?php if (!empty($revenue_reports)): ?>
@@ -181,6 +188,11 @@ ob_start();
                     <table class="table">
                         <thead>
                             <tr>
+                                <?php if ($userRole === 'admin'): ?>
+                                <th width="50">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this)">
+                                </th>
+                                <?php endif; ?>
                                 <th>Ngày thanh toán</th>
                                 <th>Học viên</th>
                                 <th>Khóa học</th>
@@ -195,6 +207,11 @@ ob_start();
                         <tbody>
                             <?php foreach ($revenue_reports as $report): ?>
                                 <tr>
+                                    <?php if ($userRole === 'admin'): ?>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input revenue-checkbox" value="<?= $report['id'] ?>" onchange="updateSelectedCount()">
+                                    </td>
+                                    <?php endif; ?>
                                     <td>
                                         <div>
                                             <span class="fw-semibold"><?= date('d/m/Y', strtotime($report['payment_date'])) ?></span>
@@ -233,7 +250,7 @@ ob_start();
                                         $transferTypes = [
                                             'cash' => ['label' => 'Tiền mặt', 'color' => 'warning', 'icon' => 'fas fa-coins'],
                                             'account_co_nhi' => ['label' => 'TK Cô Nhi', 'color' => 'primary', 'icon' => 'fas fa-university'],
-                                            'account_thay_hien' => ['label' => 'TK Thầy Hiền', 'color' => 'info', 'icon' => 'fas fa-university'],
+                                            'account_thay_hien' => ['label' => 'TK Thầy Hiến', 'color' => 'info', 'icon' => 'fas fa-university'],
                                             'account_company' => ['label' => 'TK Công ty', 'color' => 'dark', 'icon' => 'fas fa-building']
                                         ];
                                         $type = $transferTypes[$report['transfer_type']] ?? ['label' => $report['transfer_type'], 'color' => 'secondary', 'icon' => 'fas fa-question'];
@@ -449,6 +466,87 @@ function deleteRevenue(revenueId) {
         
         document.body.appendChild(form);
         form.submit();
+    }
+}
+
+// Chọn tất cả checkbox
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.revenue-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelectedCount();
+}
+
+// Cập nhật số lượng đã chọn
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.revenue-checkbox:checked');
+    const count = checkboxes.length;
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    
+    if (selectedCountSpan) {
+        selectedCountSpan.textContent = count;
+    }
+    
+    if (deleteBtn) {
+        if (count > 0) {
+            deleteBtn.style.display = 'inline-block';
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+    }
+    
+    // Cập nhật trạng thái checkbox "Chọn tất cả"
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const allCheckboxes = document.querySelectorAll('.revenue-checkbox');
+    if (selectAllCheckbox && allCheckboxes.length > 0) {
+        selectAllCheckbox.checked = checkboxes.length === allCheckboxes.length;
+    }
+}
+
+// Xóa các giao dịch đã chọn
+function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.revenue-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+        alert('Vui lòng chọn ít nhất một giao dịch để xóa');
+        return;
+    }
+    
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    const count = ids.length;
+    
+    if (confirm(`Bạn có chắc chắn muốn xóa ${count} giao dịch đã chọn?\n\nHành động này không thể hoàn tác!`)) {
+        // Hiển thị loading
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        const originalHtml = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang xóa...';
+        
+        fetch('/Quan_ly_trung_tam/public/revenue/delete-multiple', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: ids })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || `Đã xóa thành công ${count} giao dịch`);
+                location.reload();
+            } else {
+                alert('Lỗi: ' + (data.message || 'Không thể xóa giao dịch'));
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(error => {
+            alert('Lỗi kết nối: ' + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalHtml;
+        });
     }
 }
 </script>

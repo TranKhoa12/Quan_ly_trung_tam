@@ -175,36 +175,117 @@ class ReportController extends BaseController
             if (!$isEmptyReport && isset($_POST['customers_data'])) {
                 $customers = json_decode($_POST['customers_data'], true);
                 if (is_array($customers)) {
+                    // Load RevenueReport model for creating revenue records
+                    require_once __DIR__ . '/../models/RevenueReport.php';
+                    $revenueModel = new RevenueReport();
+                    $savedRevenueCount = 0;
+                    
                     $customerIndex = 0;
                     foreach ($customers as $customer) {
                         if (!empty($customer['phone'])) {
-                            // Get payment method from revenue draft if exists
+                            // Get payment method from revenue data if exists
                             $paymentMethod = null;
-                            if (isset($revenueDraftsData[$customerIndex])) {
+                            $hasRevenue = isset($customer['has_revenue']) && $customer['has_revenue'] == '1';
+                            $revenueData = null;
+                            
+                            if ($hasRevenue && !empty($customer['revenue_data'])) {
+                                // Parse revenue_data JSON string
+                                $revenueDataParsed = is_string($customer['revenue_data']) 
+                                    ? json_decode($customer['revenue_data'], true) 
+                                    : $customer['revenue_data'];
+                                
+                                if (is_array($revenueDataParsed)) {
+                                    $revenueData = $revenueDataParsed;
+                                    // Map transfer_type to payment_method label
+                                    $transferTypeMap = [
+                                        'cash' => 'Tiền mặt',
+                                        'account_co_nhi' => 'TK Cô Nhi',
+                                        'account_thay_hien' => 'TK Thầy Hiến',
+                                        'account_company' => 'TK Công ty'
+                                    ];
+                                    $paymentMethod = $transferTypeMap[$revenueData['transfer_type'] ?? 'cash'] ?? null;
+                                }
+                            } elseif (isset($revenueDraftsData[$customerIndex])) {
+                                // Fallback to old revenue_drafts method for backward compatibility
                                 $transferType = $revenueDraftsData[$customerIndex]['transfer_type'] ?? null;
-                                // Map transfer_type to payment_method label
                                 $transferTypeMap = [
                                     'cash' => 'Tiền mặt',
                                     'account_co_nhi' => 'TK Cô Nhi',
-                                    'account_thay_hien' => 'TK Thầy Hiền',
+                                    'account_thay_hien' => 'TK Thầy Hiến',
                                     'account_company' => 'TK Công ty'
                                 ];
                                 $paymentMethod = $transferTypeMap[$transferType] ?? null;
                             }
                             
+                            // Create customer record
                             $customerData = [
                                 'report_id' => $reportId,
                                 'phone' => $customer['phone'],
                                 'full_name' => $customer['full_name'] ?? '',
                                 'status' => $customer['status'] ?? 'new',
                                 'course_id' => !empty($customer['course_id']) ? $customer['course_id'] : null,
-                                'registration_status' => $customer['registration_status'] ?? 'not_registered',
+                                'registration_status' => isset($customer['registered']) && $customer['registered'] == '1' ? 'registered' : 'not_registered',
                                 'payment_method' => $paymentMethod,
                                 'notes' => $customer['notes'] ?? ''
                             ];
                             $this->reportCustomerModel->create($customerData);
+                            
+                            // Create revenue record if revenue data exists
+                            if ($hasRevenue && $revenueData) {
+                                try {
+                                    // Remove commas from amount
+                                    $amount = str_replace(',', '', $revenueData['amount'] ?? '0');
+                                    
+                                    // Handle file upload for this revenue entry
+                                    $confirmationImage = null;
+                                    $fileFieldName = 'revenue_image_' . $customerIndex;
+                                    if (isset($_FILES[$fileFieldName]) && $_FILES[$fileFieldName]['error'] === UPLOAD_ERR_OK) {
+                                        try {
+                                            $studentName = $this->slugify(trim($revenueData['student_name'] ?? $customer['full_name'] ?? ''));
+                                            $dateStr = date('dmY', strtotime($revenueData['payment_date'] ?? date('Y-m-d')));
+                                            $receiptCodePart = !empty($revenueData['receipt_code']) ? $revenueData['receipt_code'] : 'NO_CODE';
+                                            
+                                            $ext = pathinfo($_FILES[$fileFieldName]['name'], PATHINFO_EXTENSION);
+                                            $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '.' . $ext;
+                                            
+                                            $confirmationImage = $this->uploadFileWithCustomName($_FILES[$fileFieldName], $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                                        } catch (Exception $e) {
+                                            error_log('Error uploading revenue image: ' . $e->getMessage());
+                                        }
+                                    }
+                                    
+                                    // Create revenue record
+                                    $revenueRecord = [
+                                        'payment_date' => $revenueData['payment_date'] ?? date('Y-m-d'),
+                                        'transfer_type' => $revenueData['transfer_type'] ?? 'cash',
+                                        'receipt_code' => $revenueData['receipt_code'] ?? '',
+                                        'amount' => floatval($amount),
+                                        'student_name' => trim($revenueData['student_name'] ?? $customer['full_name'] ?? ''),
+                                        'course_id' => !empty($revenueData['course_id']) && is_numeric($revenueData['course_id']) 
+                                            ? intval($revenueData['course_id']) 
+                                            : (!empty($customer['course_id']) ? intval($customer['course_id']) : null),
+                                        'payment_content' => $revenueData['payment_content'] ?? 'full_payment',
+                                        'staff_id' => $staffId,
+                                        'notes' => $revenueData['notes'] ?? '',
+                                        'confirmation_image' => $confirmationImage
+                                    ];
+                                    
+                                    if ($revenueRecord['amount'] > 0 && !empty($revenueRecord['student_name'])) {
+                                        $revenueModel->create($revenueRecord);
+                                        $savedRevenueCount++;
+                                        error_log("Saved revenue from customer: " . print_r($revenueRecord, true));
+                                    }
+                                } catch (Exception $e) {
+                                    error_log("Error saving revenue from customer: " . $e->getMessage());
+                                }
+                            }
+                            
                             $customerIndex++;
                         }
+                    }
+                    
+                    if ($savedRevenueCount > 0) {
+                        error_log("Saved {$savedRevenueCount} revenue records from customers");
                     }
                 }
             }
@@ -293,7 +374,9 @@ class ReportController extends BaseController
             if ($isEmptyReport) {
                 $_SESSION['success'] = 'Đã tạo báo cáo rỗng thành công cho ngày ' . $data['report_date'];
             } else {
-                $revenueCount = isset($savedCount) && $savedCount > 0 ? " và {$savedCount} doanh thu" : '';
+                // Count total revenue records saved (from both customers and old revenue_drafts)
+                $totalRevenueCount = (isset($savedRevenueCount) ? $savedRevenueCount : 0) + (isset($savedCount) ? $savedCount : 0);
+                $revenueCount = $totalRevenueCount > 0 ? " và {$totalRevenueCount} doanh thu" : '';
                 $_SESSION['success'] = 'Báo cáo đã được tạo thành công' . $revenueCount . '!';
             }
 
@@ -468,6 +551,77 @@ class ReportController extends BaseController
         } catch (Exception $e) {
             $_SESSION['error'] = $e->getMessage();
             $this->redirect('/reports');
+        }
+    }
+
+    public function deleteMultiple()
+    {
+        try {
+            $user = $this->getUser();
+            
+            // Only admin can delete reports
+            if ($user['role'] !== 'admin') {
+                $this->json(['success' => false, 'message' => 'Bạn không có quyền xóa báo cáo']);
+                return;
+            }
+            
+            // Get JSON input
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($input['ids']) || !is_array($input['ids']) || empty($input['ids'])) {
+                $this->json(['success' => false, 'message' => 'Không có báo cáo nào được chọn']);
+                return;
+            }
+            
+            $ids = array_filter($input['ids'], function($id) {
+                return is_numeric($id) && $id > 0;
+            });
+            
+            if (empty($ids)) {
+                $this->json(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
+                return;
+            }
+            
+            $deletedCount = 0;
+            $errors = [];
+            
+            foreach ($ids as $id) {
+                try {
+                    // Check if report exists
+                    $report = $this->reportModel->find($id);
+                    if (!$report) {
+                        $errors[] = "Báo cáo #$id không tồn tại";
+                        continue;
+                    }
+                    
+                    // Delete customers first (foreign key constraint)
+                    $this->reportCustomerModel->deleteByReport($id);
+                    
+                    // Delete report
+                    $deleted = $this->reportModel->deleteReport($id);
+                    
+                    if ($deleted) {
+                        $deletedCount++;
+                    } else {
+                        $errors[] = "Không thể xóa báo cáo #$id";
+                    }
+                } catch (Exception $e) {
+                    $errors[] = "Lỗi xóa báo cáo #$id: " . $e->getMessage();
+                }
+            }
+            
+            if ($deletedCount > 0) {
+                $message = "Đã xóa thành công $deletedCount báo cáo";
+                if (!empty($errors)) {
+                    $message .= ". Một số báo cáo không thể xóa: " . implode(', ', $errors);
+                }
+                $this->json(['success' => true, 'message' => $message, 'deleted_count' => $deletedCount]);
+            } else {
+                $this->json(['success' => false, 'message' => 'Không thể xóa báo cáo. ' . implode(', ', $errors)]);
+            }
+            
+        } catch (Exception $e) {
+            $this->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
         }
     }
 

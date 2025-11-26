@@ -922,7 +922,6 @@ function initializeCourseCombo(wrapper) {
                 option.className = 'dropdown-option';
                 option.innerHTML = `
                     <div style="font-weight: 500; font-size: 0.9rem;">${course.course_name}</div>
-                    <div style="font-size: 0.85rem; color: #6c757d;">Giá: ${Number(course.price).toLocaleString('vi-VN')} VNĐ</div>
                 `;
                 
                 option.addEventListener('click', () => {

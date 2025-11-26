@@ -91,7 +91,8 @@ class Certificate extends BaseModel
     {
         $data = [
             'approval_status' => 'approved',
-            'approved_by' => $approvedBy
+            'approved_by' => $approvedBy,
+            'approved_at' => date('Y-m-d H:i:s')
         ];
         
         if ($notes !== null) {
@@ -105,7 +106,8 @@ class Certificate extends BaseModel
     {
         $data = [
             'approval_status' => 'cancelled',
-            'approved_by' => $approvedBy
+            'approved_by' => $approvedBy,
+            'approved_at' => date('Y-m-d H:i:s')
         ];
         
         if ($notes !== null) {
@@ -117,7 +119,43 @@ class Certificate extends BaseModel
 
     public function markReceived($certificateId)
     {
-        return $this->update($certificateId, ['receive_status' => 'received']);
+        return $this->update($certificateId, [
+            'receive_status' => 'received',
+            'received_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    public function updateApprovalStatus($certificateId, $status, $userId = null)
+    {
+        $data = ['approval_status' => $status];
+        
+        if ($status === 'pending') {
+            // Chuyển về pending: xóa approved_by và approved_at
+            $data['approved_by'] = null;
+            $data['approved_at'] = null;
+        } else {
+            // Approved hoặc cancelled: lưu thời gian và người duyệt
+            $data['approved_at'] = date('Y-m-d H:i:s');
+            if ($userId) {
+                $data['approved_by'] = $userId;
+            }
+        }
+        
+        return $this->update($certificateId, $data);
+    }
+
+    public function updateReceiveStatus($certificateId, $status)
+    {
+        $data = ['receive_status' => $status];
+        
+        if ($status === 'received') {
+            $data['received_at'] = date('Y-m-d H:i:s');
+        } else {
+            // Chuyển về not_received: xóa received_at
+            $data['received_at'] = null;
+        }
+        
+        return $this->update($certificateId, $data);
     }
 
     public function getCertificateStats()

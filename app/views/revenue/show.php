@@ -63,7 +63,7 @@ ob_start();
                                 $transferTypes = [
                                     'cash' => ['label' => 'Tiền mặt', 'color' => 'warning', 'icon' => 'fas fa-coins'],
                                     'account_co_nhi' => ['label' => 'TK Cô Nhi', 'color' => 'primary', 'icon' => 'fas fa-university'],
-                                    'account_thay_hien' => ['label' => 'TK Thầy Hiền', 'color' => 'info', 'icon' => 'fas fa-university'],
+                                    'account_thay_hien' => ['label' => 'TK Thầy Hiến', 'color' => 'info', 'icon' => 'fas fa-university'],
                                     'account_company' => ['label' => 'TK Công ty', 'color' => 'dark', 'icon' => 'fas fa-building']
                                 ];
                                 $type = $transferTypes[$revenue['transfer_type']] ?? ['label' => $revenue['transfer_type'], 'color' => 'secondary', 'icon' => 'fas fa-question'];

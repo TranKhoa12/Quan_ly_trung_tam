@@ -448,4 +448,77 @@ class RevenueController extends BaseController
         }
         exit;
     }
+
+    public function deleteMultiple()
+    {
+        try {
+            $user = $this->getUser();
+            
+            // Only admin can delete revenue
+            if ($user['role'] !== 'admin') {
+                $this->json(['success' => false, 'message' => 'Bạn không có quyền xóa doanh thu']);
+                return;
+            }
+            
+            // Get JSON input
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($input['ids']) || !is_array($input['ids']) || empty($input['ids'])) {
+                $this->json(['success' => false, 'message' => 'Không có giao dịch nào được chọn']);
+                return;
+            }
+            
+            $ids = array_filter($input['ids'], function($id) {
+                return is_numeric($id) && $id > 0;
+            });
+            
+            if (empty($ids)) {
+                $this->json(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
+                return;
+            }
+            
+            $deletedCount = 0;
+            $errors = [];
+            
+            foreach ($ids as $id) {
+                try {
+                    // Check if revenue exists
+                    $revenue = $this->revenueModel->find($id);
+                    if (!$revenue) {
+                        $errors[] = "Giao dịch #$id không tồn tại";
+                        continue;
+                    }
+                    
+                    // Delete confirmation image if exists
+                    if (!empty($revenue['confirmation_image'])) {
+                        $this->deleteUploadedFile($revenue['confirmation_image']);
+                    }
+                    
+                    // Delete revenue record
+                    $deleted = $this->revenueModel->delete($id);
+                    
+                    if ($deleted) {
+                        $deletedCount++;
+                    } else {
+                        $errors[] = "Không thể xóa giao dịch #$id";
+                    }
+                } catch (Exception $e) {
+                    $errors[] = "Lỗi xóa giao dịch #$id: " . $e->getMessage();
+                }
+            }
+            
+            if ($deletedCount > 0) {
+                $message = "Đã xóa thành công $deletedCount giao dịch";
+                if (!empty($errors)) {
+                    $message .= ". Một số giao dịch không thể xóa: " . implode(', ', $errors);
+                }
+                $this->json(['success' => true, 'message' => $message, 'deleted_count' => $deletedCount]);
+            } else {
+                $this->json(['success' => false, 'message' => 'Không thể xóa giao dịch. ' . implode(', ', $errors)]);
+            }
+            
+        } catch (Exception $e) {
+            $this->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
+        }
+    }
 }

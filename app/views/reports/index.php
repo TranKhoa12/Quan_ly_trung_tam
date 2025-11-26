@@ -222,7 +222,14 @@ if (isset($userRole)) {
                         Danh sách báo cáo
                     <?php endif; ?>
                 </h6>
-                <span class="badge bg-primary"><?= count($reports) ?> báo cáo</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary"><?= count($reports) ?> báo cáo</span>
+                    <?php if (isset($userRole) && $userRole === 'admin' && !empty($reports)): ?>
+                    <button type="button" class="btn btn-sm btn-danger" id="deleteSelectedBtn" style="display: none;" onclick="deleteSelected()">
+                        <i class="fas fa-trash me-1"></i>Xóa đã chọn (<span id="selectedCount">0</span>)
+                    </button>
+                    <?php endif; ?>
+                </div>
             </div>
             
             <?php if (!empty($reports)): ?>
@@ -230,6 +237,11 @@ if (isset($userRole)) {
                     <table class="table">
                         <thead>
                             <tr>
+                                <?php if (isset($userRole) && $userRole === 'admin'): ?>
+                                <th width="50">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this)">
+                                </th>
+                                <?php endif; ?>
                                 <th>Ngày báo cáo</th>
                                 <?php if (isset($userRole) && $userRole === 'admin'): ?>
                                 <th>Nhân viên</th>
@@ -245,6 +257,11 @@ if (isset($userRole)) {
                         <tbody>
                             <?php foreach ($reports as $report): ?>
                                 <tr>
+                                    <?php if (isset($userRole) && $userRole === 'admin'): ?>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input report-checkbox" value="<?= $report['id'] ?>" onchange="updateSelectedCount()">
+                                    </td>
+                                    <?php endif; ?>
                                     <td>
                                         <div>
                                             <span class="fw-semibold"><?= date('d/m/Y', strtotime($report['report_date'])) ?></span>
@@ -356,6 +373,28 @@ if (isset($userRole)) {
     </div>
 </div>
 
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>
+                <span id="successToastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+    <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span id="errorToastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal xác nhận báo cáo rỗng -->
 <div class="modal fade" id="emptyReportModal" tabindex="-1" aria-labelledby="emptyReportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -408,17 +447,51 @@ $jsUserRole = isset($userRole) ? htmlspecialchars($userRole, ENT_QUOTES) : 'staf
 $jsUserId = isset($user) ? htmlspecialchars($user["id"], ENT_QUOTES) : '1';
 
 // Xử lý thông báo
-if (isset($_SESSION['success'])) {
-    $successMessage = addslashes($_SESSION['success']);
-    echo "alert('{$successMessage}');";
+$hasSuccessMessage = isset($_SESSION['success']);
+$hasErrorMessage = isset($_SESSION['error']);
+$successMessage = $hasSuccessMessage ? $_SESSION['success'] : '';
+$errorMessage = $hasErrorMessage ? $_SESSION['error'] : '';
+
+if ($hasSuccessMessage) {
     unset($_SESSION['success']);
 }
-if (isset($_SESSION['error'])) {
-    $errorMessage = addslashes($_SESSION['error']);
-    echo "alert('Lỗi: {$errorMessage}');";
+if ($hasErrorMessage) {
     unset($_SESSION['error']);
 }
 ?>
+
+// Show toast notifications on page load
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if ($hasSuccessMessage): ?>
+    showSuccessToast(<?= json_encode($successMessage) ?>);
+    <?php endif; ?>
+    
+    <?php if ($hasErrorMessage): ?>
+    showErrorToast(<?= json_encode($errorMessage) ?>);
+    <?php endif; ?>
+});
+
+function showSuccessToast(message) {
+    const toastEl = document.getElementById('successToast');
+    const messageEl = document.getElementById('successToastMessage');
+    messageEl.textContent = message;
+    const toast = new bootstrap.Toast(toastEl, {
+        autohide: true,
+        delay: 4000
+    });
+    toast.show();
+}
+
+function showErrorToast(message) {
+    const toastEl = document.getElementById('errorToast');
+    const messageEl = document.getElementById('errorToastMessage');
+    messageEl.textContent = message;
+    const toast = new bootstrap.Toast(toastEl, {
+        autohide: true,
+        delay: 5000
+    });
+    toast.show();
+}
 
 function createEmptyReport() {
     const modal = new bootstrap.Modal(document.getElementById('emptyReportModal'));
@@ -663,6 +736,87 @@ function showError(message) {
             <i class="fas fa-exclamation-triangle me-2"></i>${message}
         </div>
     `;
+}
+
+// Chọn tất cả checkbox
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.report-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelectedCount();
+}
+
+// Cập nhật số lượng đã chọn
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.report-checkbox:checked');
+    const count = checkboxes.length;
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    
+    if (selectedCountSpan) {
+        selectedCountSpan.textContent = count;
+    }
+    
+    if (deleteBtn) {
+        if (count > 0) {
+            deleteBtn.style.display = 'inline-block';
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+    }
+    
+    // Cập nhật trạng thái checkbox "Chọn tất cả"
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const allCheckboxes = document.querySelectorAll('.report-checkbox');
+    if (selectAllCheckbox && allCheckboxes.length > 0) {
+        selectAllCheckbox.checked = checkboxes.length === allCheckboxes.length;
+    }
+}
+
+// Xóa các báo cáo đã chọn
+function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.report-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+        alert('Vui lòng chọn ít nhất một báo cáo để xóa');
+        return;
+    }
+    
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    const count = ids.length;
+    
+    if (confirm(`Bạn có chắc chắn muốn xóa ${count} báo cáo đã chọn?\n\nHành động này không thể hoàn tác!`)) {
+        // Hiển thị loading
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        const originalHtml = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang xóa...';
+        
+        fetch('/Quan_ly_trung_tam/public/reports/delete-multiple', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: ids })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || `Đã xóa thành công ${count} báo cáo`);
+                location.reload();
+            } else {
+                alert('Lỗi: ' + (data.message || 'Không thể xóa báo cáo'));
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(error => {
+            alert('Lỗi kết nối: ' + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalHtml;
+        });
+    }
 }
 
 function formatDate(dateString) {

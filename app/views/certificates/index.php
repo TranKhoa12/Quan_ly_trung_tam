@@ -5,6 +5,34 @@ require_once __DIR__ . '/../layouts/main.php';
 ob_start();
 ?>
 
+<style>
+/* Fix dropdown menu visibility in table */
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: visible !important;
+}
+
+.stats-card .card-body {
+    overflow: visible !important;
+}
+
+/* Ensure dropdown menu appears above other elements */
+.dropdown-menu {
+    position: absolute !important;
+    z-index: 1050 !important;
+}
+
+/* Make sure button group doesn't clip dropdown */
+.btn-group {
+    position: static !important;
+}
+
+.table tbody tr:last-child .dropdown-menu {
+    bottom: 0;
+    top: auto;
+}
+</style>
+
 <?= pageHeader(
     'Quản lý chứng nhận', 
     'Theo dõi và xử lý các yêu cầu cấp chứng nhận hoàn thành khóa học', 
@@ -14,6 +42,25 @@ ob_start();
 ) ?>
 
 <div class="p-3">
+    <!-- Alert Messages -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <?= htmlspecialchars($_SESSION['success']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <?= htmlspecialchars($_SESSION['error']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+
     <!-- Statistics -->
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-sm-6">
@@ -118,7 +165,14 @@ ob_start();
                     <i class="fas fa-list text-primary me-2"></i>
                     Danh sách yêu cầu chứng nhận
                 </h6>
-                <span class="badge bg-primary"><?= count($certificates) ?> yêu cầu</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary"><?= count($certificates) ?> yêu cầu</span>
+                    <?php if (!empty($certificates)): ?>
+                    <button type="button" class="btn btn-sm btn-danger" id="deleteSelectedBtn" style="display: none;" onclick="deleteSelected()">
+                        <i class="fas fa-trash me-1"></i>Xóa đã chọn (<span id="selectedCount">0</span>)
+                    </button>
+                    <?php endif; ?>
+                </div>
             </div>
             
             <?php if (!empty($certificates)): ?>
@@ -126,6 +180,9 @@ ob_start();
                     <table class="table">
                         <thead>
                             <tr>
+                                <th width="50">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this)">
+                                </th>
                                 <th>Học viên</th>
                                 <th>Liên hệ</th>
                                 <th>Môn học</th>
@@ -139,6 +196,9 @@ ob_start();
                         <tbody>
                             <?php foreach ($certificates as $cert): ?>
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input certificate-checkbox" value="<?= $cert['id'] ?>" onchange="updateSelectedCount()">
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" 
@@ -194,9 +254,25 @@ ob_start();
                                         $label = $approvalLabels[$cert['approval_status']] ?? $cert['approval_status'];
                                         $icon = $approvalIcons[$cert['approval_status']] ?? 'fas fa-question';
                                         ?>
-                                        <span class="badge bg-<?= $color ?>">
-                                            <i class="<?= $icon ?> me-1"></i><?= $label ?>
-                                        </span>
+                                        <div>
+                                            <span class="badge bg-<?= $color ?>">
+                                                <i class="<?= $icon ?> me-1"></i><?= $label ?>
+                                            </span>
+                                            <?php 
+                                            // Debug data
+                                            echo "<!-- approved_at: " . ($cert['approved_at'] ?? 'NULL') . ", status: " . $cert['approval_status'] . " -->";
+                                            if (!empty($cert['approved_at']) && in_array($cert['approval_status'], ['approved', 'cancelled'])): 
+                                            ?>
+                                                <div class="mt-1">
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($cert['approved_at'])) ?>
+                                                    </small>
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-clock me-1"></i><?= date('H:i', strtotime($cert['approved_at'])) ?>
+                                                    </small>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td>
                                         <?php
@@ -216,9 +292,25 @@ ob_start();
                                         $rLabel = $receiveLabels[$cert['receive_status']] ?? $cert['receive_status'];
                                         $rIcon = $receiveIcons[$cert['receive_status']] ?? 'fas fa-question';
                                         ?>
-                                        <span class="badge bg-<?= $rColor ?>">
-                                            <i class="<?= $rIcon ?> me-1"></i><?= $rLabel ?>
-                                        </span>
+                                        <div>
+                                            <span class="badge bg-<?= $rColor ?>">
+                                                <i class="<?= $rIcon ?> me-1"></i><?= $rLabel ?>
+                                            </span>
+                                            <?php 
+                                            // Debug data
+                                            echo "<!-- received_at: " . ($cert['received_at'] ?? 'NULL') . ", status: " . $cert['receive_status'] . " -->";
+                                            if (!empty($cert['received_at']) && $cert['receive_status'] === 'received'): 
+                                            ?>
+                                                <div class="mt-1">
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($cert['received_at'])) ?>
+                                                    </small>
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-clock me-1"></i><?= date('H:i', strtotime($cert['received_at'])) ?>
+                                                    </small>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td>
                                         <div>
@@ -232,26 +324,78 @@ ob_start();
                                                class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <?php if ($cert['approval_status'] === 'pending'): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-success" 
-                                                        onclick="approveCertificate(<?= $cert['id'] ?>)" title="Phê duyệt">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        onclick="cancelCertificate(<?= $cert['id'] ?>)" title="Hủy">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                            <?php if ($cert['approval_status'] === 'approved' && $cert['receive_status'] === 'not_received'): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-info" 
-                                                        onclick="markAsReceived(<?= $cert['id'] ?>)" title="Đánh dấu đã nhận">
-                                                    <i class="fas fa-hand-holding"></i>
-                                                </button>
-                                            <?php endif; ?>
                                             <a href="/Quan_ly_trung_tam/public/certificates/<?= $cert['id'] ?>/edit" 
                                                class="btn btn-sm btn-outline-warning" title="Chỉnh sửa">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            
+                                            <!-- Dropdown for status changes (Admin only) -->
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                        data-bs-toggle="dropdown" aria-expanded="false" title="Thay đổi trạng thái">
+                                                    <i class="fas fa-tasks"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <?php if ($cert['approval_status'] === 'pending'): ?>
+                                                        <li>
+                                                            <a class="dropdown-item text-success" href="#" 
+                                                               onclick="updateApprovalStatus(<?= $cert['id'] ?>, 'approved'); return false;">
+                                                                <i class="fas fa-check me-2"></i>Phê duyệt
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger" href="#" 
+                                                               onclick="updateApprovalStatus(<?= $cert['id'] ?>, 'cancelled'); return false;">
+                                                                <i class="fas fa-times me-2"></i>Hủy
+                                                            </a>
+                                                        </li>
+                                                    <?php elseif ($cert['approval_status'] === 'approved'): ?>
+                                                        <li>
+                                                            <a class="dropdown-item text-warning" href="#" 
+                                                               onclick="updateApprovalStatus(<?= $cert['id'] ?>, 'pending'); return false;">
+                                                                <i class="fas fa-undo me-2"></i>Chuyển về Chờ duyệt
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger" href="#" 
+                                                               onclick="updateApprovalStatus(<?= $cert['id'] ?>, 'cancelled'); return false;">
+                                                                <i class="fas fa-times me-2"></i>Hủy
+                                                            </a>
+                                                        </li>
+                                                    <?php elseif ($cert['approval_status'] === 'cancelled'): ?>
+                                                        <li>
+                                                            <a class="dropdown-item text-warning" href="#" 
+                                                               onclick="updateApprovalStatus(<?= $cert['id'] ?>, 'pending'); return false;">
+                                                                <i class="fas fa-undo me-2"></i>Chuyển về Chờ duyệt
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item text-success" href="#" 
+                                                               onclick="updateApprovalStatus(<?= $cert['id'] ?>, 'approved'); return false;">
+                                                                <i class="fas fa-check me-2"></i>Phê duyệt
+                                                            </a>
+                                                        </li>
+                                                    <?php endif; ?>
+                                                    
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    
+                                                    <?php if ($cert['receive_status'] === 'not_received'): ?>
+                                                        <li>
+                                                            <a class="dropdown-item text-info" href="#" 
+                                                               onclick="updateReceiveStatus(<?= $cert['id'] ?>, 'received'); return false;">
+                                                                <i class="fas fa-hand-holding me-2"></i>Đánh dấu đã nhận
+                                                            </a>
+                                                        </li>
+                                                    <?php else: ?>
+                                                        <li>
+                                                            <a class="dropdown-item text-warning" href="#" 
+                                                               onclick="updateReceiveStatus(<?= $cert['id'] ?>, 'not_received'); return false;">
+                                                                <i class="fas fa-undo me-2"></i>Chuyển về Chưa nhận
+                                                            </a>
+                                                        </li>
+                                                    <?php endif; ?>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -273,11 +417,9 @@ ob_start();
     </div>
 </div>
 
-<?php
-$content = ob_get_clean();
+<script>
+// Custom JavaScript for certificates page
 
-// Custom JavaScript
-$customJs = '
 function approveCertificate(certId) {
     if (confirm("Bạn có chắc chắn muốn phê duyệt yêu cầu chứng nhận này?")) {
         updateCertificateStatus(certId, "approved");
@@ -296,36 +438,144 @@ function markAsReceived(certId) {
     }
 }
 
+function updateApprovalStatus(certId, status) {
+    const messages = {
+        "approved": "Bạn có chắc chắn muốn phê duyệt yêu cầu chứng nhận này?",
+        "cancelled": "Bạn có chắc chắn muốn hủy yêu cầu chứng nhận này?",
+        "pending": "Bạn có chắc chắn muốn chuyển về trạng thái Chờ duyệt?"
+    };
+    
+    if (confirm(messages[status] || "Bạn có chắc chắn muốn thay đổi trạng thái này?")) {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/Quan_ly_trung_tam/public/certificates/" + certId + "/status";
+        
+        const statusInput = document.createElement("input");
+        statusInput.type = "hidden";
+        statusInput.name = "approval_status";
+        statusInput.value = status;
+        
+        form.appendChild(statusInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function updateReceiveStatus(certId, status) {
+    const messages = {
+        "received": "Xác nhận học viên đã nhận chứng nhận?",
+        "not_received": "Bạn có chắc chắn muốn chuyển về trạng thái Chưa nhận?"
+    };
+    
+    if (confirm(messages[status] || "Bạn có chắc chắn muốn thay đổi trạng thái này?")) {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/Quan_ly_trung_tam/public/certificates/" + certId + "/receive";
+        
+        const statusInput = document.createElement("input");
+        statusInput.type = "hidden";
+        statusInput.name = "receive_status";
+        statusInput.value = status;
+        
+        form.appendChild(statusInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Legacy functions for backward compatibility
 function updateCertificateStatus(certId, status) {
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "/Quan_ly_trung_tam/public/certificates/" + certId + "/status";
-    
-    const statusInput = document.createElement("input");
-    statusInput.type = "hidden";
-    statusInput.name = "approval_status";
-    statusInput.value = status;
-    
-    form.appendChild(statusInput);
-    document.body.appendChild(form);
-    form.submit();
+    updateApprovalStatus(certId, status);
 }
 
 function updateCertificateReceiveStatus(certId, status) {
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "/Quan_ly_trung_tam/public/certificates/" + certId + "/receive";
-    
-    const statusInput = document.createElement("input");
-    statusInput.type = "hidden";
-    statusInput.name = "receive_status";
-    statusInput.value = status;
-    
-    form.appendChild(statusInput);
-    document.body.appendChild(form);
-    form.submit();
+    updateReceiveStatus(certId, status);
 }
-';
+
+// Chọn tất cả checkbox
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll(".certificate-checkbox");
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelectedCount();
+}
+
+// Cập nhật số lượng đã chọn
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll(".certificate-checkbox:checked");
+    const count = checkboxes.length;
+    const deleteBtn = document.getElementById("deleteSelectedBtn");
+    const selectedCountSpan = document.getElementById("selectedCount");
+    
+    if (selectedCountSpan) {
+        selectedCountSpan.textContent = count;
+    }
+    
+    if (deleteBtn) {
+        if (count > 0) {
+            deleteBtn.style.display = "inline-block";
+        } else {
+            deleteBtn.style.display = "none";
+        }
+    }
+    
+    // Cập nhật trạng thái checkbox "Chọn tất cả"
+    const selectAllCheckbox = document.getElementById("selectAll");
+    const allCheckboxes = document.querySelectorAll(".certificate-checkbox");
+    if (selectAllCheckbox && allCheckboxes.length > 0) {
+        selectAllCheckbox.checked = checkboxes.length === allCheckboxes.length;
+    }
+}
+
+// Xóa các yêu cầu chứng nhận đã chọn
+function deleteSelected() {
+    const checkboxes = document.querySelectorAll(".certificate-checkbox:checked");
+    
+    if (checkboxes.length === 0) {
+        alert("Vui lòng chọn ít nhất một yêu cầu để xóa");
+        return;
+    }
+    
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    const count = ids.length;
+    
+    if (confirm(`Bạn có chắc chắn muốn xóa ${count} yêu cầu chứng nhận đã chọn?\n\nHành động này không thể hoàn tác!`)) {
+        // Hiển thị loading
+        const deleteBtn = document.getElementById("deleteSelectedBtn");
+        const originalHtml = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = "<i class=\"fas fa-spinner fa-spin me-1\"></i>Đang xóa...";
+        
+        fetch("/Quan_ly_trung_tam/public/certificates/delete-multiple", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ids: ids })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || `Đã xóa thành công ${count} yêu cầu`);
+                location.reload();
+            } else {
+                alert("Lỗi: " + (data.message || "Không thể xóa yêu cầu"));
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(error => {
+            alert("Lỗi kết nối: " + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalHtml;
+        });
+    }
+}
+</script>
+
+<?php
+$content = ob_get_clean();
 
 // Render layout
 useModernLayout('Quản lý chứng nhận', $content);
