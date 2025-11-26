@@ -11,11 +11,15 @@ class ReportCustomer extends BaseModel
 
     public function getCustomersByReport($reportId)
     {
-        $sql = "SELECT rc.*, c.course_name 
+        $sql = "SELECT rc.*, 
+                       rc.phone as customer_phone,
+                       rc.full_name as customer_name,
+                       rc.registration_status as registered,
+                       c.course_name
                 FROM report_customers rc 
                 LEFT JOIN courses c ON rc.course_id = c.id 
                 WHERE rc.report_id = ?
-                ORDER BY rc.created_at ASC";
+                ORDER BY rc.id ASC";
         
         return $this->db->fetchAll($sql, [$reportId]);
     }

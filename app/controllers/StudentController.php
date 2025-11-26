@@ -10,7 +10,8 @@ class StudentController extends BaseController
     {
         parent::__construct();
         $this->studentModel = new Student();
-        $this->courseModel = new Course();
+        require_once __DIR__ . '/../models/Course.php';
+        $this->courseModel = new CourseModel();
         $this->userModel = new User();
         $this->requireAuth(); // Yêu cầu đăng nhập
         $this->requireAdmin(); // Chỉ admin mới được quản lý học viên

@@ -328,5 +328,5 @@ function updateCertificateReceiveStatus(certId, status) {
 ';
 
 // Render layout
-echo renderLayout('Quản lý chứng nhận', $content, 'certificates', '', $customJs);
+useModernLayout('Quản lý chứng nhận', $content);
 ?>

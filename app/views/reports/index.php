@@ -239,7 +239,6 @@ if (isset($userRole)) {
                                 <?php if (isset($userRole) && $userRole === 'admin'): ?>
                                 <th>Tỷ lệ chốt</th>
                                 <?php endif; ?>
-                                <th>Ghi chú</th>
                                 <th>Hành động</th>
                             </tr>
                         </thead>
@@ -276,17 +275,6 @@ if (isset($userRole)) {
                                         <span class="badge bg-<?= $color ?> fs-6"><?= number_format($rate, 1) ?>%</span>
                                     </td>
                                     <?php endif; ?>
-                                    <td>
-                                        <?php if (!empty($report['notes'])): ?>
-                                            <span class="text-truncate d-inline-block" style="max-width: 150px;" 
-                                                  title="<?= htmlspecialchars($report['notes']) ?>">
-                                                <?= htmlspecialchars(substr($report['notes'], 0, 50)) ?>
-                                                <?= strlen($report['notes']) > 50 ? '...' : '' ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-muted">Không có</span>
-                                        <?php endif; ?>
-                                    </td>
                                     <td>
                                         <?php if (isset($userRole) && $userRole === 'admin'): ?>
                                         <div class="btn-group" role="group">
@@ -413,79 +401,84 @@ if (isset($userRole)) {
     </div>
 </div>
 
+<script>
 <?php
-$content = ob_get_clean();
+// Lấy dữ liệu user để truyền vào JavaScript
+$jsUserRole = isset($userRole) ? htmlspecialchars($userRole, ENT_QUOTES) : 'staff';
+$jsUserId = isset($user) ? htmlspecialchars($user["id"], ENT_QUOTES) : '1';
 
-// Custom JavaScript
-$customJs = '
+// Xử lý thông báo
+if (isset($_SESSION['success'])) {
+    $successMessage = addslashes($_SESSION['success']);
+    echo "alert('{$successMessage}');";
+    unset($_SESSION['success']);
+}
+if (isset($_SESSION['error'])) {
+    $errorMessage = addslashes($_SESSION['error']);
+    echo "alert('Lỗi: {$errorMessage}');";
+    unset($_SESSION['error']);
+}
+?>
+
 function createEmptyReport() {
-    // Hiển thị modal xác nhận
-    const modal = new bootstrap.Modal(document.getElementById("emptyReportModal"));
+    const modal = new bootstrap.Modal(document.getElementById('emptyReportModal'));
     modal.show();
 }
 
 function confirmEmptyReport() {
-    // Lấy thông tin user hiện tại
-  const userRole = "' . (isset($userRole) ? htmlspecialchars($userRole, ENT_QUOTES) : 'staff') . '";
-    const userId = "' . (isset($user) ? htmlspecialchars($user["id"], ENT_QUOTES) : '1') . '";
-
+    const userRole = '<?php echo $jsUserRole; ?>';
+    const userId = '<?php echo $jsUserId; ?>';
+    const staffName = '<?php echo isset($user["full_name"]) ? addslashes($user["full_name"]) : "Nhân viên"; ?>';
+    const today = '<?php echo date('Y-m-d'); ?>';
+    const todayFormatted = '<?php echo date('d/m/Y'); ?>'; // Định dạng dd/mm/yyyy
+    const currentTime = '<?php echo date('H:i:s'); ?>';
     
-    // Tạo form để submit báo cáo rỗng
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "/Quan_ly_trung_tam/public/reports";
+    const noteText = `Báo cáo rỗng - ${todayFormatted} Không có khách hàng đến trung tâm trong ca dạy của nhân viên ${staffName}.`;
     
-    // Thêm các hidden input
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/Quan_ly_trung_tam/public/reports';
+    
     const inputs = [
-        {name: "report_date", value: new Date().toISOString().split("T")[0]},
-        {name: "report_time", value: new Date().toTimeString().split(" ")[0]},
-        {name: "staff_id", value: userId},
-        {name: "total_visitors", value: "0"},
-        {name: "total_registered", value: "0"},
-        {name: "empty_report", value: "1"},
-        {name: "notes", value: "Báo cáo rỗng - Không có khách hàng đến trung tâm trong ngày " + new Date().toISOString().split("T")[0]}
+        {name: 'report_date', value: today},
+        {name: 'report_time', value: currentTime},
+        {name: 'staff_id', value: userId},
+        {name: 'total_visitors', value: '0'},
+        {name: 'total_registered', value: '0'},
+        {name: 'empty_report', value: '1'},
+        {name: 'notes', value: noteText}
     ];
     
     inputs.forEach(input => {
-        const hiddenInput = document.createElement("input");
-        hiddenInput.type = "hidden";
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
         hiddenInput.name = input.name;
         hiddenInput.value = input.value;
         form.appendChild(hiddenInput);
     });
     
-    // Debug: In ra console để kiểm tra
-    console.log("Submitting empty report with data:", inputs);
+    console.log('Submitting empty report with data:', inputs);
     
     document.body.appendChild(form);
     form.submit();
 }
 
 function deleteReport(reportId) {
-    if (confirm("Bạn có chắc chắn muốn xóa báo cáo này?")) {
-        // Create form and submit
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = "/Quan_ly_trung_tam/public/reports/" + reportId + "/delete";
+    if (confirm('Bạn có chắc chắn muốn xóa báo cáo này?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Quan_ly_trung_tam/public/reports/' + reportId + '/delete';
         
-        const csrfToken = document.createElement("input");
-        csrfToken.type = "hidden";
-        csrfToken.name = "_token";
-        csrfToken.value = "csrf_token_here"; // Add CSRF token if needed
-        
-        form.appendChild(csrfToken);
         document.body.appendChild(form);
         form.submit();
     }
 }
 
 function viewReportDetails(reportId) {
-    // Hiển thị modal
-    const modal = new bootstrap.Modal(document.getElementById("reportDetailModal"));
+    const modal = new bootstrap.Modal(document.getElementById('reportDetailModal'));
     modal.show();
     
-    // Reset nội dung modal về loading state
-    document.getElementById("reportDetailContent").innerHTML = `
+    document.getElementById('reportDetailContent').innerHTML = `
         <div class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Đang tải...</span>
@@ -494,211 +487,197 @@ function viewReportDetails(reportId) {
         </div>
     `;
     
-    // Gọi API để lấy chi tiết báo cáo
     fetch(`/Quan_ly_trung_tam/public/api/reports/${reportId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                renderReportDetails(data.data);
+                renderReportDetails(data.data.report, data.data.customers);
             } else {
-                showError(data.message || "Không thể tải thông tin báo cáo");
+                showError(data.message || 'Không thể tải thông tin báo cáo');
             }
         })
         .catch(error => {
-            console.error("Error:", error);
-            showError("Đã xảy ra lỗi khi tải thông tin");
+            console.error('Error:', error);
+            showError('Đã xảy ra lỗi khi tải thông tin');
         });
 }
 
-function renderReportDetails(data) {
-    const report = data.report;
-    const customers = data.customers;
-    
-    // Tính toán thống kê
-    const conversionRate = report.total_visitors > 0 ? 
-        (report.total_registered / report.total_visitors * 100) : 0;
-    const rateColor = conversionRate >= 50 ? "success" : (conversionRate >= 20 ? "warning" : "danger");
-    
-    let html = `
-        <!-- Thông tin báo cáo -->
-        <div class="row g-3 mb-4">
+function renderReportDetails(report, customers) {
+    const detailContent = `
+        <div class="row g-3">
             <div class="col-md-6">
-                <div class="card bg-light">
+                <div class="card">
                     <div class="card-body">
-                        <h6 class="card-title">
-                            <i class="fas fa-calendar text-primary me-2"></i>
-                            Thông tin báo cáo
+                        <h6 class="card-subtitle mb-3 text-muted">
+                            <i class="fas fa-info-circle me-2"></i>Thông tin chung
                         </h6>
-                        <p class="mb-1"><strong>Ngày:</strong> ${formatDate(report.report_date)}</p>
-                        <p class="mb-1"><strong>Giờ:</strong> ${formatTime(report.report_time)}</p>
-                        <p class="mb-0"><strong>Nhân viên:</strong> ${report.staff_name || "N/A"}</p>
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="40%">Mã báo cáo:</th>
+                                <td>${report.id}</td>
+                            </tr>
+                            <tr>
+                                <th>Ngày báo cáo:</th>
+                                <td>${formatDate(report.report_date)}</td>
+                            </tr>
+                            <tr>
+                                <th>Giờ báo cáo:</th>
+                                <td>${formatTime(report.report_time)}</td>
+                            </tr>
+                            <tr>
+                                <th>Nhân viên:</th>
+                                <td>${report.staff_name || 'Không xác định'}</td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card bg-light">
+                <div class="card">
                     <div class="card-body">
-                        <h6 class="card-title">
-                            <i class="fas fa-chart-bar text-success me-2"></i>
-                            Thống kê
+                        <h6 class="card-subtitle mb-3 text-muted">
+                            <i class="fas fa-chart-bar me-2"></i>Thống kê
                         </h6>
-                        <p class="mb-1"><strong>Khách đến:</strong> <span class="badge bg-info">${report.total_visitors}</span></p>
-                        <p class="mb-1"><strong>Khách chốt:</strong> <span class="badge bg-success">${report.total_registered}</span></p>
-                        <p class="mb-0"><strong>Tỷ lệ chốt:</strong> <span class="badge bg-${rateColor}">${conversionRate.toFixed(1)}%</span></p>
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="40%">Tổng khách đến:</th>
+                                <td><span class="badge bg-primary">${report.total_visitors}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Đã đăng ký:</th>
+                                <td><span class="badge bg-success">${report.total_registered}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Chưa đăng ký:</th>
+                                <td><span class="badge bg-warning">${report.total_visitors - report.total_registered}</span></td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-    
-    // Ghi chú nếu có
-    if (report.notes) {
-        html += `
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h6 class="card-title">
-                        <i class="fas fa-sticky-note text-warning me-2"></i>
-                        Ghi chú
-                    </h6>
-                    <p class="mb-0">${report.notes.replace(/\\n/g, "<br>")}</p>
+            ${
+                report.notes ? `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-3 text-muted">
+                                <i class="fas fa-sticky-note me-2"></i>Ghi chú
+                            </h6>
+                            <p class="mb-0">${report.notes}</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
-    }
-    
-    // Danh sách khách hàng
-    html += `
-        <div class="card">
-            <div class="card-body">
-                <h6 class="card-title">
-                    <i class="fas fa-users text-primary me-2"></i>
-                    Danh sách khách hàng (${customers.length} người)
-                </h6>
-    `;
-    
-    if (customers.length > 0) {
-        html += `
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Họ tên</th>
-                            <th>Số điện thoại</th>
-                            <th>Khóa học</th>
-                            <th>Trạng thái</th>
-                            <th>Đăng ký</th>
-                            <th>Thanh toán</th>
-                            <th>Ghi chú</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        customers.forEach(customer => {
-            const statusLabels = {
-                "new": "Mới",
-                "contacted": "Đã liên hệ", 
-                "interested": "Quan tâm",
-                "registered": "Đã đăng ký",
-                "not_interested": "Không quan tâm"
-            };
-            
-            const statusColors = {
-                "new": "primary",
-                "contacted": "info",
-                "interested": "warning", 
-                "registered": "success",
-                "not_interested": "secondary"
-            };
-            
-            const statusLabel = statusLabels[customer.status] || customer.status;
-            const statusColor = statusColors[customer.status] || "secondary";
-            
-            html += `
-                <tr>
-                    <td>
-                        <i class="fas fa-user-circle text-muted me-1"></i>
-                        ${customer.full_name}
-                    </td>
-                    <td>
-                        <a href="tel:${customer.phone}" class="text-decoration-none">
-                            <i class="fas fa-phone text-success me-1"></i>
-                            ${customer.phone}
-                        </a>
-                    </td>
-                    <td>
-                        <span class="badge bg-light text-dark">
-                            ${customer.course_name || "Chưa chọn"}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge bg-${statusColor}">${statusLabel}</span>
-                    </td>
-                    <td>
-                        ${customer.registration_status === "registered" ? 
-                            "<i class=\"fas fa-check-circle text-success\"></i> Đã đăng ký" : 
-                            "<i class=\"fas fa-minus-circle text-muted\"></i> Chưa đăng ký"
-                        }
-                    </td>
-                    <td>
-                        ${customer.payment_method ? 
-                            `<span class="badge bg-info">${customer.payment_method}</span>` : 
-                            "<span class=\"text-muted\">-</span>"
-                        }
-                    </td>
-                    <td>
-                        ${customer.notes ? 
-                            `<span title="${customer.notes}">${customer.notes.length > 20 ? customer.notes.substring(0, 20) + "..." : customer.notes}</span>` : 
-                            "<span class=\"text-muted\">-</span>"
-                        }
-                    </td>
-                </tr>
-            `;
-        });
-        
-        html += `
-                    </tbody>
-                </table>
-            </div>
-        `;
-    } else {
-        html += `
-            <div class="text-center py-4">
-                <i class="fas fa-users text-muted fa-3x mb-3"></i>
-                <h6 class="text-muted">Chưa có thông tin khách hàng</h6>
-                <p class="text-muted">Báo cáo này chưa có dữ liệu chi tiết về khách hàng</p>
-            </div>
-        `;
-    }
-    
-    html += `
-            </div>
+                ` : ''
+            }
+            ${
+                customers && customers.length > 0 ? `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-3 text-muted">
+                                <i class="fas fa-users me-2"></i>Danh sách khách hàng (${customers.length})
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%">STT</th>
+                                            <th width="20%">Tên khách hàng</th>
+                                            <th width="15%">Số điện thoại</th>
+                                            <th width="25%">Khóa học</th>
+                                            <th width="15%">Hình thức thanh toán</th>
+                                            <th width="20%">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${customers.map((customer, index) => {
+                                            // Thu gọn tên khóa học nếu quá dài
+                                            let courseName = customer.course_name || 'Chưa chọn';
+                                            let courseTitle = courseName;
+                                            if (courseName.length > 30) {
+                                                courseName = courseName.substring(0, 30) + '...';
+                                            }
+                                            
+                                            // Định dạng hình thức thanh toán
+                                            let paymentMethod = 'N/A';
+                                            let paymentBadge = 'secondary';
+                                            if (customer.payment_method) {
+                                                switch(customer.payment_method) {
+                                                    case 'cash':
+                                                        paymentMethod = 'Tiền mặt';
+                                                        paymentBadge = 'success';
+                                                        break;
+                                                    case 'transfer':
+                                                        paymentMethod = 'Chuyển khoản';
+                                                        paymentBadge = 'primary';
+                                                        break;
+                                                    case 'card':
+                                                        paymentMethod = 'Thẻ';
+                                                        paymentBadge = 'info';
+                                                        break;
+                                                    default:
+                                                        paymentMethod = customer.payment_method;
+                                                }
+                                            }
+                                            
+                                            return `
+                                            <tr>
+                                                <td>${index + 1}</td>
+                                                <td>${customer.customer_name || 'N/A'}</td>
+                                                <td>${customer.customer_phone || 'N/A'}</td>
+                                                <td>
+                                                    <span class="text-truncate d-inline-block" 
+                                                          style="max-width: 250px;" 
+                                                          title="${courseTitle}">
+                                                        ${courseName}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-${paymentBadge}">${paymentMethod}</span>
+                                                </td>
+                                                <td>
+                                                    ${customer.registered === 'registered' || customer.registration_status === 'registered' ? 
+                                                        '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Đã chốt</span>' : 
+                                                        '<span class="badge bg-secondary"><i class="fas fa-clock me-1"></i>Chưa chốt</span>'}
+                                                </td>
+                                            </tr>
+                                        `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ` : ''
+            }
         </div>
     `;
     
-    document.getElementById("reportDetailContent").innerHTML = html;
+    document.getElementById('reportDetailContent').innerHTML = detailContent;
 }
 
 function showError(message) {
-    document.getElementById("reportDetailContent").innerHTML = `
-        <div class="text-center py-4">
-            <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
-            <h6 class="text-muted">Không thể tải thông tin</h6>
-            <p class="text-muted">${message}</p>
+    document.getElementById('reportDetailContent').innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>${message}
         </div>
     `;
 }
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN");
+    return date.toLocaleDateString('vi-VN');
 }
 
 function formatTime(timeString) {
-    return timeString.substring(0, 5); // HH:MM
+    return timeString.substring(0, 5);
 }
-';
+</script>
 
-// Render layout
-echo renderLayout('Báo cáo đến trung tâm', $content, 'reports', '', $customJs);
+<?php
+$content = ob_get_clean();
+
+// Render layout with modern UI
+useModernLayout('Báo cáo đến trung tâm', $content);
 ?>

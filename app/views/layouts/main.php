@@ -1,5 +1,27 @@
 <?php
-// Layout helper functions
+// Modern Layout Wrapper - Redirects to modern layout
+function useModernLayout($pageTitle, $content) {
+    // Compute base path
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    $scriptDir = str_replace('\\', '/', dirname($scriptName));
+    $appBasePath = rtrim($scriptDir, '/');
+    if ($appBasePath === '' || $appBasePath === '.') {
+        $appBasePath = '';
+    }
+
+    $buildUrl = function (string $path = '') use ($appBasePath): string {
+        $normalized = '/' . ltrim($path, '/');
+        return ($appBasePath ? $appBasePath : '') . $normalized;
+    };
+
+    $appBasePathString = $appBasePath ? $appBasePath : '';
+    
+    // Include modern layout
+    include __DIR__ . '/modern.php';
+    exit;
+}
+
+// Legacy Layout helper functions (kept for backward compatibility)
 function renderLayout($title, $content, $activePage = '', $customCss = '', $customJs = '') {
     // Lấy thông tin user từ session
     $userName = $_SESSION['full_name'] ?? 'User';
@@ -330,12 +352,60 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                     </div>
                     
                     <ul class="nav flex-column px-3">
+                        <!-- Dashboard cho tất cả -->
                         <li class="nav-item">
                             <a class="nav-link <?= $activePage === 'dashboard' ? 'active' : '' ?>" 
                                href="/Quan_ly_trung_tam/public/dashboard">
-                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                                <i class="fas fa-tachometer-alt me-2"></i> 
+                                <?= $userRole === 'staff' ? 'Trang chủ nhân viên' : 'Dashboard' ?>
                             </a>
                         </li>
+                        
+                        <!-- Công việc chính của nhân viên -->
+                        <?php if ($userRole === 'staff'): ?>
+                        <li class="nav-item mt-3">
+                            <div class="nav-header text-white-50 px-3 py-2 text-uppercase small fw-bold">
+                                <i class="fas fa-briefcase me-2"></i>Công việc của tôi
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'reports' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/reports">
+                                <i class="fas fa-clipboard-list me-2"></i> Tạo báo cáo học viên
+                                <span class="badge bg-primary ms-auto">Hàng ngày</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'revenue' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/revenue">
+                                <i class="fas fa-chart-line me-2"></i> Báo cáo doanh thu
+                                <span class="badge bg-success ms-auto">Quan trọng</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'certificates' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/certificates">
+                                <i class="fas fa-award me-2"></i> Yêu cầu cấp chứng nhận
+                                <span class="badge bg-warning ms-auto">3</span>
+                            </a>
+                        </li>
+                        
+                        <!-- Xem thông tin (chỉ đọc) -->
+                        <li class="nav-item mt-3">
+                            <div class="nav-header text-white-50 px-3 py-2 text-uppercase small fw-bold">
+                                <i class="fas fa-eye me-2"></i>Thông tin chung
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'students' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/students">
+                                <i class="fas fa-users me-2"></i> Danh sách học viên
+                                <small class="text-muted ms-auto">(Chỉ xem)</small>
+                            </a>
+                        </li>
+                        
+                        <?php else: // Admin menu ?>
+                        <!-- Menu đầy đủ cho Admin -->
                         <li class="nav-item">
                             <a class="nav-link <?= $activePage === 'reports' ? 'active' : '' ?>" 
                                href="/Quan_ly_trung_tam/public/reports">
@@ -351,16 +421,17 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                         <li class="nav-item">
                             <a class="nav-link <?= $activePage === 'students' ? 'active' : '' ?>" 
                                href="/Quan_ly_trung_tam/public/students">
-                                <i class="fas fa-graduation-cap me-2"></i> Học viên
+                                <i class="fas fa-graduation-cap me-2"></i> Quản lý học viên
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link <?= $activePage === 'certificates' ? 'active' : '' ?>" 
                                href="/Quan_ly_trung_tam/public/certificates">
-                                <i class="fas fa-certificate me-2"></i> Chứng nhận
+                                <i class="fas fa-certificate me-2"></i> Quản lý chứng nhận
                                 <span class="badge bg-warning ms-auto">3</span>
                             </a>
                         </li>
+                        <?php endif; ?>
                         
                         <!-- Admin Only Features -->
                         <?php if ($userRole === 'admin'): ?>
@@ -378,9 +449,9 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?= $activePage === 'departments' ? 'active' : '' ?>" 
-                               href="/Quan_ly_trung_tam/public/departments">
-                                <i class="fas fa-building me-2"></i> Quản lý phòng ban
+                            <a class="nav-link <?= $activePage === 'courses' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/courses">
+                                <i class="fas fa-book me-2"></i> Quản lý khóa học
                             </a>
                         </li>
                         <li class="nav-item">
@@ -421,6 +492,43 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
             <!-- Main content -->
             <main class="col-md-9 ms-sm-auto col-lg-10">
                 <div class="main-content fade-in-up">
+                    <!-- Flash Messages -->
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <?= htmlspecialchars($_SESSION['success']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <?php unset($_SESSION['success']); ?>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <?= htmlspecialchars($_SESSION['error']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <?php unset($_SESSION['error']); ?>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($_SESSION['warning'])): ?>
+                        <div class="alert alert-warning alert-dismissible fade show m-3" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <?= htmlspecialchars($_SESSION['warning']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <?php unset($_SESSION['warning']); ?>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($_SESSION['info'])): ?>
+                        <div class="alert alert-info alert-dismissible fade show m-3" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <?= htmlspecialchars($_SESSION['info']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <?php unset($_SESSION['info']); ?>
+                    <?php endif; ?>
+                    
                     <?= $content ?>
                 </div>
             </main>
@@ -428,6 +536,7 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -500,5 +609,48 @@ function statsCard($icon, $title, $value, $description = '', $color = 'primary',
             ' . ($description ? '<small class="text-muted">' . htmlspecialchars($description) . '</small>' : '') . '
         </div>
     </div>';
+}
+
+function actionCard($icon, $title, $description, $color = 'primary', $actions = []) {
+    $colorMap = [
+        'primary' => '#4f46e5',
+        'success' => '#10b981',
+        'info' => '#06b6d4',
+        'warning' => '#f59e0b',
+        'danger' => '#ef4444',
+        'secondary' => '#6b7280'
+    ];
+    
+    $bgColor = $colorMap[$color] ?? $colorMap['primary'];
+    
+    $actionsHtml = '';
+    foreach ($actions as $action) {
+        $actionsHtml .= '<a href="' . htmlspecialchars($action['url']) . '" class="btn btn-' . $color . ' btn-sm">
+            <i class="fas fa-' . htmlspecialchars($action['icon']) . ' me-1"></i>' . htmlspecialchars($action['label']) . '
+        </a> ';
+    }
+    
+    return '
+    <div class="card h-100 shadow-sm border-0" style="transition: all 0.3s ease;">
+        <div class="card-body text-center">
+            <div class="mb-3">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle" 
+                     style="width: 60px; height: 60px; background: linear-gradient(135deg, ' . $bgColor . ', ' . $bgColor . 'dd);">
+                    <i class="' . htmlspecialchars($icon) . ' text-white fs-4"></i>
+                </div>
+            </div>
+            <h5 class="card-title fw-bold mb-2">' . htmlspecialchars($title) . '</h5>
+            <p class="card-text text-muted small mb-3">' . htmlspecialchars($description) . '</p>
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                ' . $actionsHtml . '
+            </div>
+        </div>
+    </div>
+    <style>
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+        }
+    </style>';
 }
 ?>

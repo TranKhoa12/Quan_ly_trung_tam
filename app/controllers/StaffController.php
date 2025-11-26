@@ -106,6 +106,10 @@ class StaffController extends BaseController {
     
     public function update($id) {
         try {
+            // Debug information
+            error_log("Update method called for staff ID: " . $id);
+            error_log("POST data: " . print_r($_POST, true));
+            
             $data = [
                 'full_name' => $_POST['full_name'] ?? '',
                 'username' => $_POST['username'] ?? '',
@@ -136,21 +140,41 @@ class StaffController extends BaseController {
                 throw new Exception('Không thể cập nhật nhân viên');
             }
         } catch (Exception $e) {
+            error_log("Update error: " . $e->getMessage());
             header('Location: /Quan_ly_trung_tam/public/staff/' . $id . '/edit?error=' . urlencode($e->getMessage()));
             exit;
         }
     }
     
     public function delete($id) {
+        header('Content-Type: application/json');
+        
         try {
+            // Check authentication first
+            if (!isset($_SESSION['user_id'])) {
+                throw new Exception('Authentication required');
+            }
+            
+            if ($_SESSION['role'] !== 'admin') {
+                throw new Exception('Admin access required');
+            }
+            
+            // Log debug information
+            error_log("Delete method called for staff ID: " . $id);
+            error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+            error_log("_POST data: " . print_r($_POST, true));
+            error_log("Session user: " . ($_SESSION['username'] ?? 'none'));
+            
+            // Router has already handled method override, so we just proceed with deletion
             $result = $this->staffModel->deleteStaff($id);
             
             if ($result) {
                 echo json_encode(['success' => true, 'message' => 'Đã xóa nhân viên thành công']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Không thể xóa nhân viên']);
+                echo json_encode(['success' => false, 'message' => 'Không thể xóa nhân viên - Database error']);
             }
         } catch (Exception $e) {
+            http_response_code(500);
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }

@@ -40,6 +40,24 @@ class Staff extends BaseModel {
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         }
         
+        // Handle date fields - set to NULL if empty
+        if (isset($data['hire_date']) && empty($data['hire_date'])) {
+            $data['hire_date'] = null;
+        }
+        
+        // Handle numeric fields - set to NULL if empty
+        if (isset($data['salary']) && $data['salary'] === '') {
+            $data['salary'] = null;
+        }
+        
+        // Handle text fields - set to NULL if empty for optional fields
+        $optionalFields = ['phone', 'address', 'department', 'notes'];
+        foreach ($optionalFields as $field) {
+            if (isset($data[$field]) && $data[$field] === '') {
+                $data[$field] = null;
+            }
+        }
+        
         $data['role'] = 'staff';
         $data['created_at'] = date('Y-m-d H:i:s');
         
@@ -54,6 +72,24 @@ class Staff extends BaseModel {
             unset($data['password']);
         }
         
+        // Handle date fields - set to NULL if empty
+        if (isset($data['hire_date']) && empty($data['hire_date'])) {
+            $data['hire_date'] = null;
+        }
+        
+        // Handle numeric fields - set to NULL if empty
+        if (isset($data['salary']) && $data['salary'] === '') {
+            $data['salary'] = null;
+        }
+        
+        // Handle text fields - set to NULL if empty for optional fields
+        $optionalFields = ['phone', 'address', 'department', 'notes'];
+        foreach ($optionalFields as $field) {
+            if (isset($data[$field]) && $data[$field] === '') {
+                $data[$field] = null;
+            }
+        }
+        
         $data['updated_at'] = date('Y-m-d H:i:s');
         
         return $this->update($id, $data);
@@ -64,9 +100,27 @@ class Staff extends BaseModel {
     }
     
     public function getDepartments() {
+        // Default departments
+        $defaultDepartments = [
+            'Tư vấn',
+            'Giảng dạy',
+            'Kế toán',
+            'Marketing',
+            'Hành chính',
+            'IT',
+            'Quản lý'
+        ];
+        
+        // Get existing departments from database
         $sql = "SELECT DISTINCT department FROM {$this->table} WHERE role = 'staff' AND department IS NOT NULL ORDER BY department";
         $result = $this->db->fetchAll($sql);
-        return array_column($result, 'department');
+        $existingDepartments = array_column($result, 'department');
+        
+        // Merge and return unique departments
+        $allDepartments = array_unique(array_merge($defaultDepartments, $existingDepartments));
+        sort($allDepartments);
+        
+        return $allDepartments;
     }
     
     public function getStaffStats() {

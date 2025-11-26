@@ -51,7 +51,7 @@ CREATE TABLE report_customers (
     status ENUM('new', 'returning') NOT NULL DEFAULT 'new',
     course_id INT,
     registration_status ENUM('registered', 'not_registered') NOT NULL DEFAULT 'not_registered',
-    payment_method ENUM('cash', 'transfer') NULL,
+    payment_method VARCHAR(50) NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE,

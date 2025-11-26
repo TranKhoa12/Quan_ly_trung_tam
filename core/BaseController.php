@@ -6,8 +6,14 @@ class BaseController
     
     public function __construct()
     {
-        $this->db = Database::getInstance();
-        $this->checkAuth();
+        try {
+            $this->db = Database::getInstance();
+        } catch (Exception $e) {
+            // Gracefully handle database connection failures so pages still render
+            $this->db = null;
+            error_log('[BaseController] Database unavailable: ' . $e->getMessage());
+        }
+        // Remove automatic checkAuth() call - let child controllers decide
     }
 
     protected function checkAuth()
@@ -46,6 +52,13 @@ class BaseController
         return isset($_SESSION['user_id']);
     }
 
+    protected function requireAuth()
+    {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/Quan_ly_trung_tam/public/login');
+        }
+    }
+
     protected function getUser()
     {
         if ($this->isLoggedIn()) {
@@ -57,13 +70,6 @@ class BaseController
             ];
         }
         return null;
-    }
-
-    protected function requireAuth()
-    {
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/Quan_ly_trung_tam/public/login');
-        }
     }
 
     protected function requireRole($role)
@@ -127,10 +133,73 @@ class BaseController
         }
 
         $fileName = uniqid() . '.' . $extension;
-        $uploadPath = __DIR__ . '/../../public/uploads/' . $fileName;
+        
+        // Get correct path to uploads directory
+        // Use BASE_PATH constant if available, fallback to calculated path
+        if (defined('BASE_PATH')) {
+            $uploadDir = BASE_PATH . '/public/uploads/';
+        } else {
+            $uploadDir = dirname(__DIR__) . '/public/uploads/';
+        }
+        
+        // Ensure upload directory exists and is writable
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0777, true)) {
+                throw new Exception('Cannot create upload directory: ' . $uploadDir);
+            }
+        }
+        
+        if (!is_writable($uploadDir)) {
+            throw new Exception('Upload directory is not writable: ' . $uploadDir);
+        }
+        
+        $uploadPath = $uploadDir . $fileName;
 
         if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            throw new Exception('Failed to move uploaded file');
+            throw new Exception('Failed to move uploaded file. Upload path: ' . $uploadPath);
+        }
+
+        return $fileName;
+    }
+
+    protected function uploadFileWithCustomName($file, $customFileName, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'])
+    {
+        if (!isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception('File upload error');
+        }
+
+        $fileInfo = pathinfo($file['name']);
+        $extension = strtolower($fileInfo['extension']);
+
+        if (!in_array($extension, $allowedTypes)) {
+            throw new Exception('File type not allowed');
+        }
+
+        // Use custom filename
+        $fileName = $customFileName;
+        
+        // Get correct path to uploads directory
+        if (defined('BASE_PATH')) {
+            $uploadDir = BASE_PATH . '/public/uploads/';
+        } else {
+            $uploadDir = dirname(__DIR__) . '/public/uploads/';
+        }
+        
+        // Ensure upload directory exists and is writable
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0777, true)) {
+                throw new Exception('Cannot create upload directory: ' . $uploadDir);
+            }
+        }
+        
+        if (!is_writable($uploadDir)) {
+            throw new Exception('Upload directory is not writable: ' . $uploadDir);
+        }
+        
+        $uploadPath = $uploadDir . $fileName;
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            throw new Exception('Failed to move uploaded file. Upload path: ' . $uploadPath);
         }
 
         return $fileName;

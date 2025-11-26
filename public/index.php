@@ -52,11 +52,17 @@ $router->get('/reports', 'Report@index');
 $router->get('/reports/create', 'Report@create');
 $router->post('/reports', 'Report@store');
 $router->get('/reports/{id}', 'Report@show');
+$router->get('/reports/{id}/edit', 'Report@edit');
+$router->post('/reports/{id}/update', 'Report@update');
+$router->post('/reports/{id}/delete', 'Report@delete');
 
 // Revenue routes
 $router->get('/revenue', 'Revenue@index');
 $router->get('/revenue/create', 'Revenue@create');
 $router->post('/revenue', 'Revenue@store');
+$router->get('/revenue/check-receipt-code', 'Revenue@checkReceiptCode');
+$router->post('/revenue/processOCR', 'Revenue@processOCR');
+$router->get('/revenue/{id}', 'Revenue@show');
 
 // Students routes
 $router->get('/students', 'Student@index');
@@ -75,8 +81,24 @@ $router->get('/staff/create', 'Staff@create');
 $router->post('/staff', 'Staff@store');
 $router->get('/staff/{id}', 'Staff@show');
 $router->get('/staff/{id}/edit', 'Staff@edit');
-$router->put('/staff/{id}', 'Staff@update');
-$router->delete('/staff/{id}', 'Staff@delete');
+$router->put('/staff/{id}/update', 'Staff@update');
+$router->delete('/staff/{id}/delete', 'Staff@delete');
+
+// Course management routes (Admin only)
+$router->get('/courses', 'Course@index');
+$router->get('/courses/create', 'Course@create');
+$router->post('/courses', 'Course@store');
+$router->get('/courses/import', 'Course@import');
+$router->post('/courses/process-import', 'Course@processImport');
+$router->get('/courses/download-template', 'Course@downloadTemplate');
+$router->get('/courses/export', 'Course@export');
+$router->get('/courses/{id}', 'Course@show');
+$router->get('/courses/{id}/edit', 'Course@edit');
+$router->put('/courses/{id}/update', 'Course@update');
+$router->delete('/courses/{id}/delete', 'Course@delete');
+
+// OCR route
+$router->post('/ocr', 'OCR@processImage');
 
 // API routes
 $router->api('GET', '/reports', 'Report@apiIndex');
@@ -87,6 +109,7 @@ $router->api('DELETE', '/reports/{id}', 'Report@apiDelete');
 
 $router->api('GET', '/revenue', 'Revenue@apiIndex');
 $router->api('POST', '/revenue', 'Revenue@apiStore');
+$router->api('POST', '/revenue/from-report', 'Revenue@apiStoreFromReport');
 $router->api('GET', '/revenue/{id}', 'Revenue@apiShow');
 
 $router->api('GET', '/students', 'Student@apiIndex');

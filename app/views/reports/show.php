@@ -32,6 +32,41 @@ if (isset($userRole)) {
 
 <?= pageHeader($headerTitle, $headerDesc, $headerButton) ?>
 
+<style>
+    /* Course Name Badge Styling */
+    .course-name-badge {
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 0.375rem !important;
+        cursor: help;
+    }
+    
+    .course-name-badge:hover {
+        background-color: #e9ecef !important;
+        transform: scale(1.02);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    /* Table styling for better course column */
+    .table td {
+        vertical-align: middle;
+    }
+    
+    /* Responsive table adjustments */
+    @media (max-width: 768px) {
+        .course-name-badge {
+            font-size: 0.7rem !important;
+            max-width: 150px !important;
+        }
+        
+        .table th:nth-child(3),
+        .table td:nth-child(3) {
+            max-width: 150px !important;
+        }
+    }
+</style>
+
 <div class="p-3">
     <?php if (isset($error)): ?>
         <div class="alert alert-danger">
@@ -145,13 +180,13 @@ if (isset($userRole)) {
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>Họ tên</th>
-                                    <th>Số điện thoại</th>
-                                    <th>Khóa học quan tâm</th>
-                                    <th>Trạng thái</th>
-                                    <th>Đăng ký</th>
-                                    <th>Phương thức thanh toán</th>
-                                    <th>Ghi chú</th>
+                                    <th style="min-width: 120px;">Họ tên</th>
+                                    <th style="min-width: 120px;">Số điện thoại</th>
+                                    <th style="max-width: 250px; width: 250px;">Khóa học quan tâm</th>
+                                    <th style="min-width: 100px;">Trạng thái</th>
+                                    <th style="width: 80px; text-align: center;">Đăng ký</th>
+                                    <th style="min-width: 120px;">Phương thức thanh toán</th>
+                                    <th style="min-width: 100px;">Ghi chú</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -169,9 +204,16 @@ if (isset($userRole)) {
                                                 <?= htmlspecialchars($customer['phone']) ?>
                                             </a>
                                         </td>
-                                        <td>
-                                            <span class="badge bg-light text-dark">
-                                                <?= htmlspecialchars($customer['course_name'] ?? 'Chưa chọn') ?>
+                                        <td style="max-width: 250px;">
+                                            <?php 
+                                            $courseName = $customer['course_name'] ?? 'Chưa chọn';
+                                            $displayName = strlen($courseName) > 40 ? substr($courseName, 0, 37) . '...' : $courseName;
+                                            ?>
+                                            <span class="badge bg-light text-dark course-name-badge" 
+                                                  title="<?= htmlspecialchars($courseName) ?>"
+                                                  style="max-width: 100%; white-space: normal; word-wrap: break-word; 
+                                                         text-overflow: ellipsis; overflow: hidden; display: inline-block;">
+                                                <?= htmlspecialchars($displayName) ?>
                                             </span>
                                         </td>
                                         <td>
@@ -256,18 +298,19 @@ $customJs = '';
 if (isset($userRole) && $userRole === 'admin') {
     $customJs = '
     function deleteReport(reportId) {
-        if (confirm("Bạn có chắc chắn muốn xóa báo cáo này?")) {
+        if (confirm("Bạn có chắc chắn muốn xóa báo cáo này? Hành động này không thể hoàn tác!")) {
             // Create form and submit
             const form = document.createElement("form");
             form.method = "POST";
             form.action = "/Quan_ly_trung_tam/public/reports/" + reportId + "/delete";
             
-            const csrfToken = document.createElement("input");
-            csrfToken.type = "hidden";
-            csrfToken.name = "_token";
-            csrfToken.value = "csrf_token_here"; // Add CSRF token if needed
+            // Add hidden method field for better compatibility
+            const methodField = document.createElement("input");
+            methodField.type = "hidden";
+            methodField.name = "_method";
+            methodField.value = "DELETE";
             
-            form.appendChild(csrfToken);
+            form.appendChild(methodField);
             document.body.appendChild(form);
             form.submit();
         }
@@ -276,5 +319,5 @@ if (isset($userRole) && $userRole === 'admin') {
 }
 
 // Render layout
-echo renderLayout('Chi tiết báo cáo', $content, 'reports', '', $customJs);
+useModernLayout('Chi tiết báo cáo', $content);
 ?>

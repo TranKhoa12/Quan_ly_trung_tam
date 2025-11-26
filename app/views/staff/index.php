@@ -162,7 +162,16 @@ ob_start();
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <button class="btn btn-outline-danger" 
-                                                    onclick="deleteStaff(<?= $staff['id'] ?>)" title="Xóa">
+                                                    onclick="if(confirm('Bạn có chắc chắn muốn xóa nhân viên này?')) { 
+                                                        fetch('/Quan_ly_trung_tam/public/staff/<?= $staff['id'] ?>/delete', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                                            body: '_method=DELETE'
+                                                        }).then(r => r.json()).then(d => {
+                                                            if(d.success) { alert('Xóa thành công!'); location.reload(); } 
+                                                            else { alert('Lỗi: ' + d.message); }
+                                                        }).catch(e => alert('Lỗi: ' + e.message));
+                                                    }" title="Xóa">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -223,39 +232,17 @@ $customCss = '
 
 // Custom JavaScript
 $customJs = '
-<script>
-function deleteStaff(id) {
-    if (confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) {
-        fetch("/Quan_ly_trung_tam/public/staff/" + id, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert("Có lỗi xảy ra: " + data.message);
-            }
-        })
-        .catch(error => {
-            alert("Có lỗi xảy ra khi xóa nhân viên");
-        });
-    }
-}
-
 // Success/Error messages
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get("success") === "created") {
-    alert("Đã thêm nhân viên thành công!");
-}
-if (urlParams.get("error")) {
-    alert("Lỗi: " + decodeURIComponent(urlParams.get("error")));
-}
-</script>';
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("success") === "created") {
+        alert("Đã thêm nhân viên thành công!");
+    }
+    if (urlParams.get("error")) {
+        alert("Lỗi: " + decodeURIComponent(urlParams.get("error")));
+    }
+});';
 
 // Render layout
-echo renderLayout('Quản lý nhân viên', $content, 'staff', $customCss, $customJs);
+useModernLayout('Quản lý nhân viên', $content);
 ?>

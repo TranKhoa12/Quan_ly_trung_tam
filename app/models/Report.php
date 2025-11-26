@@ -82,4 +82,32 @@ class Report extends BaseModel
         
         return $this->db->fetchAll($sql, [$startDate, $endDate]);
     }
+
+    public function updateReport($id, $data)
+    {
+        $fields = [];
+        $values = [];
+        
+        foreach ($data as $field => $value) {
+            if (in_array($field, $this->fillable)) {
+                $fields[] = "$field = ?";
+                $values[] = $value;
+            }
+        }
+        
+        $values[] = $id;
+        
+        $sql = "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = ?";
+        
+        $stmt = $this->db->query($sql, $values);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function deleteReport($id)
+    {
+        $sql = "DELETE FROM {$this->table} WHERE id = ?";
+        $stmt = $this->db->query($sql, [$id]);
+        return $stmt->rowCount() > 0;
+    }
+
 }

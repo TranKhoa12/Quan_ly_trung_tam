@@ -40,9 +40,16 @@ class Router {
         $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $requestMethod = $_SERVER['REQUEST_METHOD'];
         
+        // Handle method override for forms
+        if ($requestMethod === 'POST' && isset($_POST['_method'])) {
+            $requestMethod = strtoupper($_POST['_method']);
+            // Debug: log method override
+            error_log("Method override detected: POST -> " . $requestMethod);
+        }
+        
         // Debug: Show request info
-        // echo "Request URI: " . $requestUri . "<br>";
-        // echo "Request Method: " . $requestMethod . "<br>";
+        error_log("Request URI: " . $requestUri);
+        error_log("Request Method: " . $requestMethod);
         
         // Handle different base paths for Laragon
         $possibleBasePaths = [

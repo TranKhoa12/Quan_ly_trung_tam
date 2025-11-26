@@ -5,18 +5,38 @@ require_once __DIR__ . '/../layouts/main.php';
 ob_start();
 ?>
 
-<?= pageHeader(
-    'Dashboard', 
-    'Chào mừng bạn đến với hệ thống quản lý trung tâm', 
-    '<div class="d-flex align-items-center gap-2">
-        <span class="badge bg-success">
-            <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Trực tuyến
-        </span>
-        <span class="badge bg-primary">Cập nhật: ' . date('d/m/Y H:i') . '</span>
-    </div>'
-) ?>
+<!-- Include Dashboard CSS and Chart.js -->
+<link rel="stylesheet" href="/assets/css/dashboard.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="p-3">
+<div class="dashboard-container">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-1">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Dashboard Quản Trị
+                    </h1>
+                    <p class="subtitle mb-0">
+                        Chào mừng bạn đến với hệ thống quản lý trung tâm - Toàn cảnh hoạt động hôm nay
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex align-items-center justify-content-md-end gap-2 mt-3 mt-md-0">
+                        <span class="badge badge-modern bg-success badge-pulse">
+                            <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Hệ thống hoạt động
+                        </span>
+                        <span class="badge badge-modern bg-light text-dark">
+                            <i class="fas fa-clock me-1"></i><?= date('d/m/Y H:i') ?>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid p-3">
     <!-- Statistics Cards with Animation -->
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-sm-6">
@@ -238,107 +258,40 @@ ob_start();
         </div>
     </div>
 
-    <!-- Enhanced Monthly Performance Chart -->
+    <!-- Thông tin tổng quan cho Admin -->
     <div class="row g-3 mt-4">
         <div class="col-12">
-            <div class="stats-card dashboard-card" data-aos="fade-up" data-aos-delay="800">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
                         <h6 class="card-title mb-0">
-                            <i class="fas fa-chart-area text-success me-2"></i>
-                            Hiệu suất tháng này
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Tổng quan hệ thống
                         </h6>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-calendar me-1"></i>Tháng <?= date('m/Y') ?>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Tháng này</a></li>
-                                <li><a class="dropdown-item" href="#">Tháng trước</a></li>
-                                <li><a class="dropdown-item" href="#">3 tháng gần đây</a></li>
-                            </ul>
-                        </div>
+                        <span class="badge bg-primary">Admin Dashboard</span>
                     </div>
-                    
+                </div>
+                <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-3">
-                            <div class="performance-metric text-center p-3 rounded bg-primary-subtle">
-                                <div class="performance-icon mb-2">
-                                    <i class="fas fa-users text-primary fa-2x"></i>
-                                </div>
-                                <div class="text-primary fs-3 fw-bold mb-1" data-counter="<?= $stats['total_visitors_month'] ?>">0</div>
-                                <small class="text-muted fw-medium">Tổng khách đến</small>
-                                <div class="progress mt-2" style="height: 4px;">
-                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 85%"></div>
-                                </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-users-cog fa-2x text-primary mb-2"></i>
+                                <h6>Quản lý toàn diện</h6>
+                                <p class="text-muted small mb-0">Xem và điều chỉnh tất cả hoạt động của trung tâm</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="performance-metric text-center p-3 rounded bg-success-subtle">
-                                <div class="performance-icon mb-2">
-                                    <i class="fas fa-handshake text-success fa-2x"></i>
-                                </div>
-                                <div class="text-success fs-3 fw-bold mb-1" data-counter="<?= $stats['total_registered_month'] ?>">0</div>
-                                <small class="text-muted fw-medium">Tổng khách chốt</small>
-                                <div class="progress mt-2" style="height: 4px;">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: 72%"></div>
-                                </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                                <h6>Báo cáo chi tiết</h6>
+                                <p class="text-muted small mb-0">Truy cập báo cáo từ tất cả nhân viên</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="performance-metric text-center p-3 rounded bg-info-subtle">
-                                <div class="performance-icon mb-2">
-                                    <i class="fas fa-coins text-info fa-2x"></i>
-                                </div>
-                                <div class="text-info fs-3 fw-bold mb-1" data-counter="<?= $stats['total_revenue_month'] ?>">0</div>
-                                <small class="text-muted fw-medium">Tổng doanh thu (đ)</small>
-                                <div class="progress mt-2" style="height: 4px;">
-                                    <div class="progress-bar bg-info" role="progressbar" style="width: 90%"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="performance-metric text-center p-3 rounded bg-warning-subtle">
-                                <?php 
-                                $monthly_rate = $stats['total_visitors_month'] > 0 ? 
-                                    ($stats['total_registered_month'] / $stats['total_visitors_month'] * 100) : 0;
-                                $rate_color = $monthly_rate >= 50 ? 'success' : ($monthly_rate >= 20 ? 'warning' : 'danger');
-                                ?>
-                                <div class="performance-icon mb-2">
-                                    <i class="fas fa-percentage text-<?= $rate_color ?> fa-2x"></i>
-                                </div>
-                                <div class="text-<?= $rate_color ?> fs-3 fw-bold mb-1" data-counter="<?= number_format($monthly_rate, 1) ?>">0</div>
-                                <small class="text-muted fw-medium">Tỷ lệ chốt trung bình</small>
-                                <div class="progress mt-2" style="height: 4px;">
-                                    <div class="progress-bar bg-<?= $rate_color ?>" role="progressbar" style="width: <?= $monthly_rate ?>%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Mini Chart Visualization -->
-                    <div class="mt-4 pt-3 border-top">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">Xu hướng 7 ngày gần đây</h6>
-                                <div class="mini-chart d-flex align-items-end justify-content-between" style="height: 80px;">
-                                    <div class="chart-bar bg-primary" style="height: 60%; width: 12%;"></div>
-                                    <div class="chart-bar bg-primary" style="height: 75%; width: 12%;"></div>
-                                    <div class="chart-bar bg-primary" style="height: 45%; width: 12%;"></div>
-                                    <div class="chart-bar bg-primary" style="height: 85%; width: 12%;"></div>
-                                    <div class="chart-bar bg-primary" style="height: 70%; width: 12%;"></div>
-                                    <div class="chart-bar bg-primary" style="height: 90%; width: 12%;"></div>
-                                    <div class="chart-bar bg-primary" style="height: 100%; width: 12%;"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">So sánh với tháng trước</h6>
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-arrow-up text-success me-2"></i>
-                                    <span class="text-success fw-bold">+12.5%</span>
-                                    <span class="text-muted ms-2">tăng trưởng</span>
-                                </div>
-                                <small class="text-muted">Hiệu suất tốt hơn 15% so với kỳ vọng</small>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-cogs fa-2x text-warning mb-2"></i>
+                                <h6>Cấu hình hệ thống</h6>
+                                <p class="text-muted small mb-0">Điều chỉnh cài đặt và phân quyền</p>
                             </div>
                         </div>
                     </div>

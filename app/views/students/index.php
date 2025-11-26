@@ -264,5 +264,5 @@ function deleteStudent(studentId) {
 ';
 
 // Render layout
-echo renderLayout('Quản lý học viên', $content, 'students', '', $customJs);
+useModernLayout('Quản lý học viên', $content);
 ?>
