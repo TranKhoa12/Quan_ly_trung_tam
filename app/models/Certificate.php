@@ -5,7 +5,8 @@ class Certificate extends BaseModel
     protected $table = 'certificates';
     protected $fillable = [
         'student_name', 'username', 'phone', 'subject', 'receive_status',
-        'approval_status', 'notes', 'requested_by', 'approved_by'
+        'approval_status', 'notes', 'requested_by', 'approved_by',
+        'approved_at', 'received_at'
     ];
     protected $timestamps = false; // Tắt timestamps cho bảng certificates
 

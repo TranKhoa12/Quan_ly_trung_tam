@@ -195,6 +195,17 @@ ob_start();
                         </thead>
                         <tbody>
                             <?php foreach ($certificates as $cert): ?>
+                                <?php
+                                // DEBUG: Print to check data
+                                if ($cert['id'] == 3) {
+                                    echo "<!-- CERT ID 3 DATA: ";
+                                    echo "approved_at='" . ($cert['approved_at'] ?? 'NOT_SET') . "' ";
+                                    echo "received_at='" . ($cert['received_at'] ?? 'NOT_SET') . "' ";
+                                    echo "approval_status='" . $cert['approval_status'] . "' ";
+                                    echo "receive_status='" . $cert['receive_status'] . "' ";
+                                    echo "-->";
+                                }
+                                ?>
                                 <tr>
                                     <td>
                                         <input type="checkbox" class="form-check-input certificate-checkbox" value="<?= $cert['id'] ?>" onchange="updateSelectedCount()">
@@ -258,11 +269,7 @@ ob_start();
                                             <span class="badge bg-<?= $color ?>">
                                                 <i class="<?= $icon ?> me-1"></i><?= $label ?>
                                             </span>
-                                            <?php 
-                                            // Debug data
-                                            echo "<!-- approved_at: " . ($cert['approved_at'] ?? 'NULL') . ", status: " . $cert['approval_status'] . " -->";
-                                            if (!empty($cert['approved_at']) && in_array($cert['approval_status'], ['approved', 'cancelled'])): 
-                                            ?>
+                                            <?php if (!empty($cert['approved_at'])): ?>
                                                 <div class="mt-1">
                                                     <small class="text-muted d-block">
                                                         <i class="fas fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($cert['approved_at'])) ?>
@@ -296,11 +303,7 @@ ob_start();
                                             <span class="badge bg-<?= $rColor ?>">
                                                 <i class="<?= $rIcon ?> me-1"></i><?= $rLabel ?>
                                             </span>
-                                            <?php 
-                                            // Debug data
-                                            echo "<!-- received_at: " . ($cert['received_at'] ?? 'NULL') . ", status: " . $cert['receive_status'] . " -->";
-                                            if (!empty($cert['received_at']) && $cert['receive_status'] === 'received'): 
-                                            ?>
+                                            <?php if (!empty($cert['received_at'])): ?>
                                                 <div class="mt-1">
                                                     <small class="text-muted d-block">
                                                         <i class="fas fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($cert['received_at'])) ?>
