@@ -41,14 +41,44 @@ class CompletionSlip extends BaseModel
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (cs.student_name LIKE ? OR cs.phone LIKE ? OR cs.teacher_name LIKE ?)";
+            $sql .= " AND (cs.student_name LIKE ? OR cs.phone LIKE ?)";
             $keyword = '%' . $filters['search'] . '%';
-            $params[] = $keyword;
             $params[] = $keyword;
             $params[] = $keyword;
         }
 
-        $sql .= " ORDER BY cs.created_at DESC";
+        if (!empty($filters['teacher'])) {
+            $sql .= " AND cs.teacher_name LIKE ?";
+            $params[] = '%' . $filters['teacher'] . '%';
+        }
+
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(cs.created_at) >= ?";
+            $params[] = $filters['date_from'];
+        }
+
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(cs.created_at) <= ?";
+            $params[] = $filters['date_to'];
+        }
+
+        // Sorting
+        $sort = $filters['sort'] ?? 'newest';
+        switch ($sort) {
+            case 'oldest':
+                $sql .= " ORDER BY cs.created_at ASC";
+                break;
+            case 'student_asc':
+                $sql .= " ORDER BY cs.student_name ASC";
+                break;
+            case 'student_desc':
+                $sql .= " ORDER BY cs.student_name DESC";
+                break;
+            case 'newest':
+            default:
+                $sql .= " ORDER BY cs.created_at DESC";
+                break;
+        }
 
         if ($limit !== null) {
             $sql .= " LIMIT ?";
@@ -79,11 +109,25 @@ class CompletionSlip extends BaseModel
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (cs.student_name LIKE ? OR cs.phone LIKE ? OR cs.teacher_name LIKE ?)";
+            $sql .= " AND (cs.student_name LIKE ? OR cs.phone LIKE ?)";
             $keyword = '%' . $filters['search'] . '%';
             $params[] = $keyword;
             $params[] = $keyword;
-            $params[] = $keyword;
+        }
+
+        if (!empty($filters['teacher'])) {
+            $sql .= " AND cs.teacher_name LIKE ?";
+            $params[] = '%' . $filters['teacher'] . '%';
+        }
+
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(cs.created_at) >= ?";
+            $params[] = $filters['date_from'];
+        }
+
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(cs.created_at) <= ?";
+            $params[] = $filters['date_to'];
         }
 
         $result = $this->db->fetch($sql, $params);
@@ -100,5 +144,16 @@ class CompletionSlip extends BaseModel
                 WHERE cs.id = ?";
 
         return $this->db->fetch($sql, [$id]);
+    }
+
+    public function getDistinctCreators()
+    {
+        $sql = "SELECT DISTINCT cs.created_by AS id, COALESCE(u.full_name, CONCAT('Người dùng #', cs.created_by)) AS full_name
+                FROM completion_slips cs
+                LEFT JOIN users u ON cs.created_by = u.id
+                WHERE cs.created_by IS NOT NULL
+                ORDER BY full_name ASC";
+
+        return $this->db->fetchAll($sql);
     }
 }

@@ -3,32 +3,40 @@
 require_once __DIR__ . '/../models/CompletionSlip.php';
 require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Staff.php';
 
 class CompletionSlipController extends BaseController
 {
     private $completionSlipModel;
     private $courseModel;
+    private $userModel;
+    private $staffModel;
+    private $staffList;
 
     public function __construct()
     {
         parent::__construct();
         $this->completionSlipModel = new CompletionSlip();
         $this->courseModel = new CourseModel();
+        $this->userModel = new User();
+        $this->staffModel = new Staff();
+        $teachingStaff = $this->staffModel->getAllStaff('', '', 'active');
+        $this->staffList = array_values(array_filter($teachingStaff, function ($staff) {
+            if (empty($staff['department'])) {
+                return false;
+            }
+            $dept = mb_strtolower(trim($staff['department']), 'UTF-8');
+            return $dept === 'giảng dạy';
+        }));
         $this->requireAuth();
     }
 
     public function index()
     {
-        $filters = [];
+        $filters = $this->buildFilters($_GET);
 
         try {
             $user = $this->getUser();
-            if (!empty($_GET['course_id'])) {
-                $filters['course_id'] = (int) $_GET['course_id'];
-            }
-            if (!empty($_GET['search'])) {
-                $filters['search'] = trim($_GET['search']);
-            }
 
             $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
             $perPage = 12;
@@ -37,10 +45,13 @@ class CompletionSlipController extends BaseController
             $totalRecords = $this->completionSlipModel->countWithFilters($filters);
             $slips = $this->completionSlipModel->getAllWithRelations($filters, $perPage, $offset);
             $courses = $this->courseModel->getActiveCourses();
+            $creators = $this->completionSlipModel->getDistinctCreators();
 
             $this->view('completion_slips/index', [
                 'slips' => $slips,
                 'courses' => $courses,
+                'creators' => $creators,
+                'staffList' => $this->staffList,
                 'filters' => $filters,
                 'userRole' => $user['role'] ?? 'staff',
                 'userId' => $user['id'] ?? 0,
@@ -52,10 +63,13 @@ class CompletionSlipController extends BaseController
         } catch (Exception $e) {
             error_log('CompletionSlip index error: ' . $e->getMessage());
             $courses = $this->courseModel->getActiveCourses();
+            $creators = $this->completionSlipModel->getDistinctCreators();
             $user = $this->getUser();
             $this->view('completion_slips/index', [
                 'slips' => [],
                 'courses' => $courses,
+                'creators' => $creators,
+                'staffList' => $this->staffList,
                 'filters' => $filters,
                 'userRole' => $user['role'] ?? 'staff',
                 'userId' => $user['id'] ?? 0,
@@ -71,12 +85,10 @@ class CompletionSlipController extends BaseController
     public function create()
     {
         $courses = $this->courseModel->getActiveCourses();
-        $userModel = new User();
-        $staffList = $userModel->getStaffList();
-        
+
         $this->view('completion_slips/create', [
             'courses' => $courses,
-            'staffList' => $staffList
+            'staffList' => $this->staffList
         ]);
     }
 
@@ -119,6 +131,7 @@ class CompletionSlipController extends BaseController
             }
             $this->view('completion_slips/create', [
                 'courses' => $courses,
+                'staffList' => $this->staffList,
                 'error' => $e->getMessage(),
                 'old_data' => $_POST
             ]);
@@ -165,14 +178,12 @@ class CompletionSlipController extends BaseController
 
             $courses = $this->courseModel->getActiveCourses();
             $images = !empty($slip['image_files']) ? (json_decode($slip['image_files'], true) ?: []) : [];
-            $userModel = new User();
-            $staffList = $userModel->getStaffList();
 
             $this->view('completion_slips/edit', [
                 'slip' => $slip,
                 'courses' => $courses,
                 'images' => $images,
-                'staffList' => $staffList
+                'staffList' => $this->staffList
             ]);
         } catch (Exception $e) {
             $_SESSION['error'] = $e->getMessage();
@@ -243,6 +254,230 @@ class CompletionSlipController extends BaseController
             $_SESSION['error'] = $e->getMessage();
             $this->redirect('/Quan_ly_trung_tam/public/completion-slips/' . $id . '/edit');
         }
+    }
+
+    public function exportPdf()
+    {
+        $user = $this->getUser();
+        if (($user['role'] ?? 'staff') !== 'admin') {
+            $_SESSION['error'] = 'Chỉ quản trị viên mới có quyền xuất PDF.';
+            $this->redirect('/Quan_ly_trung_tam/public/completion-slips');
+            return;
+        }
+
+        $filters = $this->buildFilters($_GET);
+
+        try {
+            $slips = $this->completionSlipModel->getAllWithRelations($filters);
+            $attachments = $this->collectAttachmentFiles($slips);
+
+            if (empty($attachments)) {
+                throw new Exception('Không tìm thấy ảnh phiếu nào phù hợp với bộ lọc đã chọn để xuất PDF.');
+            }
+
+            $autoloadPath = defined('BASE_PATH') ? BASE_PATH . '/vendor/autoload.php' : dirname(__DIR__, 2) . '/vendor/autoload.php';
+            if (file_exists($autoloadPath)) {
+                require_once $autoloadPath;
+            }
+
+            $pdf = new \setasign\Fpdi\Tcpdf\Fpdi('P', 'mm', 'A4', true, 'UTF-8');
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+            $pdf->SetMargins(10, 10, 10);
+            $pdf->SetAutoPageBreak(false);
+            $pdf->SetFont('dejavusans', '', 11, '', true);
+            $pdf->SetCreator('Completion Slip Export');
+            $pdf->SetTitle('Completion Slip Attachments');
+
+            $totalAttachments = count($attachments);
+            foreach ($attachments as $index => $attachment) {
+                $extension = $attachment['extension'];
+                $slip = $attachment['slip'];
+                $fileName = $attachment['name'];
+
+                if ($extension === 'pdf') {
+                    $pageCount = $pdf->setSourceFile($attachment['path']);
+                    for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                        $templateId = $pdf->importPage($pageNo);
+                        $templateSize = $pdf->getTemplateSize($templateId);
+                        $orientation = $templateSize['width'] >= $templateSize['height'] ? 'L' : 'P';
+                        $pdf->AddPage($orientation, [$templateSize['width'], $templateSize['height']]);
+                        $contentTop = $this->renderPdfHeader($pdf, $slip, $fileName, $index + 1, $totalAttachments, $pageNo, $pageCount);
+                        $contentTop += 2;
+
+                        $availableWidth = $pdf->getPageWidth() - 20;
+                        $availableHeight = $pdf->getPageHeight() - $contentTop - 10;
+                        if ($availableWidth <= 0 || $availableHeight <= 0) {
+                            continue;
+                        }
+
+                        $scale = min($availableWidth / $templateSize['width'], $availableHeight / $templateSize['height'], 1);
+                        $renderWidth = $templateSize['width'] * $scale;
+                        $renderHeight = $templateSize['height'] * $scale;
+                        $offsetX = ($pdf->getPageWidth() - $renderWidth) / 2;
+
+                        $pdf->useTemplate($templateId, $offsetX, $contentTop, $renderWidth, $renderHeight);
+                    }
+                } else {
+                    $imageInfo = @getimagesize($attachment['path']);
+                    if (!$imageInfo) {
+                        continue;
+                    }
+
+                    $orientation = ($imageInfo[0] >= $imageInfo[1]) ? 'L' : 'P';
+                    $pdf->AddPage($orientation);
+                    $contentTop = $this->renderPdfHeader($pdf, $slip, $fileName, $index + 1, $totalAttachments, 1, 1);
+                    $contentTop += 2;
+
+                    $availableWidth = $pdf->getPageWidth() - 20;
+                    $availableHeight = $pdf->getPageHeight() - $contentTop - 10;
+                    if ($availableWidth <= 0 || $availableHeight <= 0) {
+                        continue;
+                    }
+
+                    $scale = min($availableWidth / $imageInfo[0], $availableHeight / $imageInfo[1]);
+                    $renderWidth = $imageInfo[0] * $scale;
+                    $renderHeight = $imageInfo[1] * $scale;
+                    $offsetX = ($pdf->getPageWidth() - $renderWidth) / 2;
+
+                    $pdf->Image($attachment['path'], $offsetX, $contentTop, $renderWidth, $renderHeight);
+                }
+            }
+
+            $fileLabelParts = [];
+            if (!empty($filters['date_from'])) {
+                $fromTs = strtotime($filters['date_from']);
+                if ($fromTs) {
+                    $fileLabelParts[] = 'from-' . date('Ymd', $fromTs);
+                }
+            }
+            if (!empty($filters['date_to'])) {
+                $toTs = strtotime($filters['date_to']);
+                if ($toTs) {
+                    $fileLabelParts[] = 'to-' . date('Ymd', $toTs);
+                }
+            }
+            $fileLabel = !empty($fileLabelParts) ? implode('-', $fileLabelParts) . '-' : '';
+            $fileName = 'completion-slips-' . $fileLabel . date('Ymd_His') . '.pdf';
+
+            if (ob_get_length()) {
+                ob_end_clean();
+            }
+
+            $pdf->Output($fileName, 'D');
+            exit;
+        } catch (Exception $e) {
+            error_log('CompletionSlip exportPdf error: ' . $e->getMessage());
+            $_SESSION['error'] = $e->getMessage();
+            $this->redirect('/Quan_ly_trung_tam/public/completion-slips');
+        }
+    }
+
+    private function buildFilters(array $input): array
+    {
+        $filters = [];
+
+        if (!empty($input['course_id'])) {
+            $filters['course_id'] = (int) $input['course_id'];
+        }
+
+        if (!empty($input['search'])) {
+            $filters['search'] = trim($input['search']);
+        }
+
+        if (!empty($input['teacher'])) {
+            $filters['teacher'] = trim($input['teacher']);
+        }
+
+        if (!empty($input['date_from'])) {
+            $filters['date_from'] = $input['date_from'];
+        }
+
+        if (!empty($input['date_to'])) {
+            $filters['date_to'] = $input['date_to'];
+        }
+
+        if (!empty($input['created_by'])) {
+            $filters['created_by'] = (int) $input['created_by'];
+        }
+
+        $allowedSorts = ['newest', 'oldest', 'student_asc', 'student_desc'];
+        $sort = $input['sort'] ?? 'newest';
+        $filters['sort'] = in_array($sort, $allowedSorts, true) ? $sort : 'newest';
+
+        return $filters;
+    }
+
+    private function collectAttachmentFiles(array $slips): array
+    {
+        $files = [];
+
+        foreach ($slips as $slip) {
+            if (empty($slip['image_files'])) {
+                continue;
+            }
+
+            $imageList = json_decode($slip['image_files'], true);
+            if (!is_array($imageList)) {
+                continue;
+            }
+
+            foreach ($imageList as $fileName) {
+                $path = $this->getUploadAbsolutePath($fileName);
+                if (!$path || !is_file($path)) {
+                    continue;
+                }
+
+                $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                if (!in_array($extension, ['jpg', 'jpeg', 'png', 'pdf'], true)) {
+                    continue;
+                }
+
+                $files[] = [
+                    'path' => $path,
+                    'name' => $fileName,
+                    'extension' => $extension,
+                    'slip' => $slip
+                ];
+            }
+        }
+
+        return $files;
+    }
+
+    private function getUploadAbsolutePath(?string $fileName): ?string
+    {
+        if (empty($fileName)) {
+            return null;
+        }
+
+        $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2);
+        return $basePath . '/public/uploads/' . $fileName;
+    }
+
+    private function renderPdfHeader($pdf, array $slip, string $fileName, int $attachmentIndex, int $attachmentTotal, int $pageNo, int $pageCount): float
+    {
+        $pdf->SetXY(10, 10);
+        $pdf->SetTextColor(33, 37, 41);
+        $pdf->SetFont('dejavusans', 'B', 12, '', true);
+        $pdf->Cell(0, 6, 'Phiếu ' . $attachmentIndex . '/' . $attachmentTotal, 0, 1);
+
+        $pdf->SetFont('dejavusans', '', 11, '', true);
+        $pdf->Cell(0, 6, 'Học viên: ' . ($slip['student_name'] ?? 'Không rõ'), 0, 1);
+        $pdf->Cell(0, 6, 'Khóa học: ' . ($slip['course_name'] ?? 'Chưa xác định'), 0, 1);
+        $pdf->Cell(0, 6, 'Giáo viên: ' . ($slip['teacher_name'] ?? 'Không rõ'), 0, 1);
+        if (!empty($slip['created_at'])) {
+            $createdAt = strtotime($slip['created_at']);
+            if ($createdAt) {
+                $pdf->Cell(0, 6, 'Ngày tạo: ' . date('d/m/Y H:i', $createdAt), 0, 1);
+            }
+        }
+
+        $pdf->SetFont('dejavusans', 'I', 10, '', true);
+        $pdf->Cell(0, 6, 'File: ' . $fileName . ' | Trang ' . $pageNo . '/' . $pageCount, 0, 1);
+        $pdf->Ln(2);
+
+        return $pdf->GetY();
     }
 
     private function handleImageUploads($studentName)

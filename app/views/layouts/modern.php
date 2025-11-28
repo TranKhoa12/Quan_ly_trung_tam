@@ -118,7 +118,6 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         <a href="<?= $buildUrl('completion-slips') ?>" class="nav-link <?= isActive('completion_slips') ?>">
                             <i class="fas fa-user-check"></i>
                             <span>Phiếu hoàn thành HV</span>
-                            <span class="badge bg-info-soft">Mới</span>
                         </a>
                     </div>
                 </div>

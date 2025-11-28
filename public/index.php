@@ -89,6 +89,7 @@ $router->post('/certificate-request', 'PublicCertificate@submit');
 
 // Completion slips routes
 $router->get('/completion-slips', 'CompletionSlip@index');
+$router->get('/completion-slips/export/pdf', 'CompletionSlip@exportPdf');
 $router->get('/completion-slips/create', 'CompletionSlip@create');
 $router->post('/completion-slips', 'CompletionSlip@store');
 $router->get('/completion-slips/{id}/edit', 'CompletionSlip@edit');
