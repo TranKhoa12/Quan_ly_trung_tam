@@ -389,6 +389,13 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                                 <span class="badge bg-warning ms-auto">3</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'completion_slips' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/completion-slips">
+                                <i class="fas fa-user-check me-2"></i> Phiếu hoàn thành HV
+                                <span class="badge bg-info ms-auto">Mới</span>
+                            </a>
+                        </li>
                         
                         <!-- Xem thông tin (chỉ đọc) -->
                         <li class="nav-item mt-3">
@@ -429,6 +436,12 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                                href="/Quan_ly_trung_tam/public/certificates">
                                 <i class="fas fa-certificate me-2"></i> Quản lý chứng nhận
                                 <span class="badge bg-warning ms-auto">3</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'completion_slips' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/completion-slips">
+                                <i class="fas fa-user-check me-2"></i> Phiếu hoàn thành HV
                             </a>
                         </li>
                         <?php endif; ?>

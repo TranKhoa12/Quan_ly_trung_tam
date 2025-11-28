@@ -295,12 +295,48 @@ ob_start();
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php if (!empty($report['confirmation_image'])): ?>
+                                        <?php 
+                                        // Get all images from confirmation_images JSON column
+                                        $allImages = [];
+                                        if (!empty($report['confirmation_images'])) {
+                                            $decoded = json_decode($report['confirmation_images'], true);
+                                            if (is_array($decoded)) {
+                                                $allImages = array_values(array_filter($decoded));
+                                            }
+                                        }
+                                        // Fallback to old single image column
+                                        if (empty($allImages) && !empty($report['confirmation_image'])) {
+                                            $allImages[] = $report['confirmation_image'];
+                                        }
+                                        // Legacy support: parse additional filenames stored in notes
+                                        if (!empty($report['notes']) && stripos($report['notes'], 'Additional images:') !== false) {
+                                            if (preg_match('/Additional images:\s*(.+?)(?:\||$)/i', $report['notes'], $matches)) {
+                                                $extraImages = array_map('trim', explode(',', $matches[1]));
+                                                foreach ($extraImages as $imageName) {
+                                                    if ($imageName !== '' && !in_array($imageName, $allImages, true)) {
+                                                        $allImages[] = $imageName;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (!empty($allImages)): 
+                                            $imageCount = count($allImages);
+                                            $imageData = json_encode(array_map(function($img) {
+                                                return '/Quan_ly_trung_tam/public/uploads/' . $img;
+                                            }, $allImages));
+                                        ?>
                                             <button type="button" 
-                                                    class="btn btn-sm btn-outline-info" 
-                                                    onclick="showImageModal('/Quan_ly_trung_tam/public/uploads/<?= htmlspecialchars($report['confirmation_image']) ?>')"
-                                                    title="Xem ảnh">
-                                                <i class="fas fa-image"></i>
+                                                    class="btn btn-sm btn-outline-info position-relative" 
+                                                    onclick='showMultipleImages(<?= $imageData ?>)'
+                                                    title="Xem <?= $imageCount ?> ảnh">
+                                                <i class="fas fa-images"></i>
+                                                <?php if ($imageCount > 1): ?>
+                                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                                          style="font-size: 0.65rem; padding: 0.2rem 0.4rem;">
+                                                        <?= $imageCount ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </button>
                                         <?php else: ?>
                                             <span class="text-muted">Không có</span>
@@ -421,18 +457,39 @@ ob_start();
     </div>
 </div>
 
-<!-- Image Preview Modal -->
+<!-- Multiple Images Preview Modal -->
 <div class="modal fade" id="imageModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-image text-primary me-2"></i>Ảnh xác nhận chuyển khoản
+                    <i class="fas fa-images text-primary me-2"></i>Ảnh xác nhận chuyển khoản
+                    <span id="imageCounter" class="badge bg-primary ms-2"></span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center p-0">
-                <img id="modalImage" src="" alt="Confirmation Image" class="img-fluid" style="max-height: 70vh; width: auto;">
+            <div class="modal-body text-center p-0 position-relative" style="min-height: 400px;">
+                <!-- Navigation Buttons -->
+                <button type="button" id="prevImageBtn" 
+                        class="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-3" 
+                        style="z-index: 10; opacity: 0.7;"
+                        onclick="navigateImage(-1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" id="nextImageBtn" 
+                        class="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-3" 
+                        style="z-index: 10; opacity: 0.7;"
+                        onclick="navigateImage(1)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                
+                <!-- Main Image -->
+                <img id="modalImage" src="" alt="Confirmation Image" 
+                     class="img-fluid" style="max-height: 70vh; width: auto;">
+                
+                <!-- Thumbnails -->
+                <div id="thumbnailsContainer" class="d-flex justify-content-center gap-2 p-3 bg-light" 
+                     style="overflow-x: auto;"></div>
             </div>
             <div class="modal-footer">
                 <a id="downloadImageBtn" href="" download class="btn btn-primary">
@@ -447,15 +504,131 @@ ob_start();
 </div>
 
 <script>
-function showImageModal(imagePath) {
-    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-    const modalImage = document.getElementById('modalImage');
-    const downloadBtn = document.getElementById('downloadImageBtn');
+let currentImages = [];
+let currentImageIndex = 0;
+
+function showMultipleImages(images) {
+    currentImages = Array.isArray(images) ? images : [images];
+    currentImageIndex = 0;
     
-    modalImage.src = imagePath;
-    downloadBtn.href = imagePath;
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    
+    // Update counter
+    const counter = document.getElementById('imageCounter');
+    if (currentImages.length > 1) {
+        counter.textContent = `1/${currentImages.length}`;
+    } else {
+        counter.textContent = '';
+    }
+    
+    // Create thumbnails
+    createThumbnails();
+    
+    // Show first image
+    displayImage(0);
+    
+    // Show/hide navigation buttons
+    updateNavigationButtons();
     
     modal.show();
+}
+
+function createThumbnails() {
+    const container = document.getElementById('thumbnailsContainer');
+    container.innerHTML = '';
+    
+    if (currentImages.length <= 1) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'flex';
+    
+    currentImages.forEach((imagePath, index) => {
+        const thumb = document.createElement('img');
+        thumb.src = imagePath;
+        thumb.className = 'border rounded';
+        thumb.style.cssText = 'width: 80px; height: 80px; object-fit: cover; cursor: pointer; transition: all 0.2s;';
+        thumb.onclick = () => displayImage(index);
+        thumb.dataset.index = index;
+        
+        if (index === 0) {
+            thumb.classList.add('border-primary');
+            thumb.style.borderWidth = '3px';
+        }
+        
+        container.appendChild(thumb);
+    });
+}
+
+function displayImage(index) {
+    if (index < 0 || index >= currentImages.length) return;
+    
+    currentImageIndex = index;
+    const modalImage = document.getElementById('modalImage');
+    const downloadBtn = document.getElementById('downloadImageBtn');
+    const counter = document.getElementById('imageCounter');
+    
+    // Update main image
+    modalImage.src = currentImages[index];
+    downloadBtn.href = currentImages[index];
+    
+    // Update counter
+    if (currentImages.length > 1) {
+        counter.textContent = `${index + 1}/${currentImages.length}`;
+    }
+    
+    // Update thumbnails
+    const thumbnails = document.querySelectorAll('#thumbnailsContainer img');
+    thumbnails.forEach((thumb, i) => {
+        if (i === index) {
+            thumb.classList.add('border-primary');
+            thumb.style.borderWidth = '3px';
+        } else {
+            thumb.classList.remove('border-primary');
+            thumb.style.borderWidth = '1px';
+        }
+    });
+    
+    updateNavigationButtons();
+}
+
+function navigateImage(direction) {
+    const newIndex = currentImageIndex + direction;
+    if (newIndex >= 0 && newIndex < currentImages.length) {
+        displayImage(newIndex);
+    }
+}
+
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prevImageBtn');
+    const nextBtn = document.getElementById('nextImageBtn');
+    
+    if (currentImages.length <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+        return;
+    }
+    
+    prevBtn.style.display = currentImageIndex > 0 ? 'block' : 'none';
+    nextBtn.style.display = currentImageIndex < currentImages.length - 1 ? 'block' : 'none';
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('imageModal');
+    if (modal.classList.contains('show')) {
+        if (e.key === 'ArrowLeft') {
+            navigateImage(-1);
+        } else if (e.key === 'ArrowRight') {
+            navigateImage(1);
+        }
+    }
+});
+
+// Legacy function for single image (backward compatibility)
+function showImageModal(imagePath) {
+    showMultipleImages([imagePath]);
 }
 
 function deleteRevenue(revenueId) {

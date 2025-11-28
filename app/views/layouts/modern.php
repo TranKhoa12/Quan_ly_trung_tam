@@ -36,6 +36,7 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+    <div id="globalToastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 11000;"></div>
     <?php
     // Get user info from session
     $currentUser = [
@@ -53,6 +54,7 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         if (strpos($currentPath, '/reports') !== false) return 'reports';
         if (strpos($currentPath, '/revenue') !== false) return 'revenue';
         if (strpos($currentPath, '/certificates') !== false) return 'certificates';
+        if (strpos($currentPath, '/completion-slips') !== false) return 'completion_slips';
         if (strpos($currentPath, '/staff') !== false) return 'staff';
         return 'dashboard';
     }
@@ -110,6 +112,13 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         <a href="<?= $buildUrl('certificates') ?>" class="nav-link <?= isActive('certificates') ?>">
                             <i class="fas fa-award"></i>
                             <span>Cấp chứng nhận</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('completion-slips') ?>" class="nav-link <?= isActive('completion_slips') ?>">
+                            <i class="fas fa-user-check"></i>
+                            <span>Phiếu hoàn thành HV</span>
+                            <span class="badge bg-info-soft">Mới</span>
                         </a>
                     </div>
                 </div>
@@ -256,6 +265,79 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
     function showNotifications() {
         // Show notifications
         alert('Thông báo: Bạn có 3 thông báo mới!');
+    }
+
+    const toastContainer = document.getElementById('globalToastContainer');
+
+    window.showToast = function(message, type = 'success') {
+        const spawnToast = () => {
+            if (!toastContainer) {
+                console.warn('Toast container is not available');
+                return;
+            }
+            const toastId = `toast-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const iconMap = {
+                success: 'fa-check-circle',
+                danger: 'fa-exclamation-triangle',
+                warning: 'fa-exclamation-circle',
+                info: 'fa-info-circle'
+            };
+            const bgMap = {
+                success: 'bg-success',
+                danger: 'bg-danger',
+                warning: 'bg-warning',
+                info: 'bg-info'
+            };
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgMap[type] || 'bg-primary'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas ${iconMap[type] || 'fa-info-circle'} me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.getElementById(toastId);
+            const toastInstance = new bootstrap.Toast(toastElement, { autohide: true, delay: 4000 });
+            toastInstance.show();
+            toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+        };
+
+        if (window.bootstrap && bootstrap.Toast) {
+            spawnToast();
+        } else {
+            window.addEventListener('load', spawnToast, { once: true });
+        }
+    };
+
+    window.pendingToasts = window.pendingToasts || [];
+    
+    <?php if (isset($_SESSION['success'])): ?>
+    window.pendingToasts.push({ message: <?= json_encode($_SESSION['success']) ?>, type: 'success' });
+    <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['error'])): ?>
+    window.pendingToasts.push({ message: <?= json_encode($_SESSION['error']) ?>, type: 'danger' });
+    <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+
+    function flushPendingToasts() {
+        if (window.pendingToasts && window.pendingToasts.length) {
+            const queued = window.pendingToasts.slice();
+            window.pendingToasts.length = 0;
+            queued.forEach(toast => {
+                window.showToast(toast.message, toast.type);
+            });
+        }
+    }
+
+    if (document.readyState === 'complete') {
+        flushPendingToasts();
+    } else {
+        window.addEventListener('load', flushPendingToasts);
     }
 
     function showMessages() {

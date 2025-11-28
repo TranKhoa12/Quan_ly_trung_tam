@@ -4,7 +4,7 @@ class RevenueReport extends BaseModel
 {
     protected $table = 'revenue_reports';
     protected $fillable = [
-        'payment_date', 'transfer_type', 'confirmation_image', 'receipt_code',
+        'payment_date', 'transfer_type', 'confirmation_image', 'confirmation_images', 'receipt_code',
         'amount', 'student_name', 'course_id', 'payment_content', 'staff_id', 'notes'
     ];
     protected $timestamps = false; // Tắt timestamps cho bảng revenue_reports (có trigger SQL)

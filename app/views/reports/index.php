@@ -447,51 +447,9 @@ $jsUserRole = isset($userRole) ? htmlspecialchars($userRole, ENT_QUOTES) : 'staf
 $jsUserId = isset($user) ? htmlspecialchars($user["id"], ENT_QUOTES) : '1';
 
 // Xử lý thông báo
-$hasSuccessMessage = isset($_SESSION['success']);
-$hasErrorMessage = isset($_SESSION['error']);
-$successMessage = $hasSuccessMessage ? $_SESSION['success'] : '';
-$errorMessage = $hasErrorMessage ? $_SESSION['error'] : '';
-
-if ($hasSuccessMessage) {
-    unset($_SESSION['success']);
-}
-if ($hasErrorMessage) {
-    unset($_SESSION['error']);
-}
 ?>
 
-// Show toast notifications on page load
-document.addEventListener('DOMContentLoaded', function() {
-    <?php if ($hasSuccessMessage): ?>
-    showSuccessToast(<?= json_encode($successMessage) ?>);
-    <?php endif; ?>
-    
-    <?php if ($hasErrorMessage): ?>
-    showErrorToast(<?= json_encode($errorMessage) ?>);
-    <?php endif; ?>
-});
-
-function showSuccessToast(message) {
-    const toastEl = document.getElementById('successToast');
-    const messageEl = document.getElementById('successToastMessage');
-    messageEl.textContent = message;
-    const toast = new bootstrap.Toast(toastEl, {
-        autohide: true,
-        delay: 4000
-    });
-    toast.show();
-}
-
-function showErrorToast(message) {
-    const toastEl = document.getElementById('errorToast');
-    const messageEl = document.getElementById('errorToastMessage');
-    messageEl.textContent = message;
-    const toast = new bootstrap.Toast(toastEl, {
-        autohide: true,
-        delay: 5000
-    });
-    toast.show();
-}
+// Toast notifications are handled by modern.php layout
 
 function createEmptyReport() {
     const modal = new bootstrap.Modal(document.getElementById('emptyReportModal'));
@@ -659,7 +617,8 @@ function renderReportDetails(report, customers) {
                                             <th width="15%">Số điện thoại</th>
                                             <th width="25%">Khóa học</th>
                                             <th width="15%">Hình thức thanh toán</th>
-                                            <th width="20%">Trạng thái</th>
+                                            <th width="20%">Ghi chú</th>
+                                            <th width="15%">Trạng thái</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -707,6 +666,16 @@ function renderReportDetails(report, customers) {
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-${paymentBadge}">${paymentMethod}</span>
+                                                </td>
+                                                <td>
+                                                    ${(() => {
+                                                        const note = (customer.notes || '').trim();
+                                                        if (!note) {
+                                                            return '<span class="text-muted">-</span>';
+                                                        }
+                                                        const truncated = note.length > 60 ? note.substring(0, 60) + '...' : note;
+                                                        return `<span class="text-truncate d-inline-block" style="max-width: 240px;" title="${escapeHtml(note, true)}">${escapeHtml(truncated)}</span>`;
+                                                    })()}
                                                 </td>
                                                 <td>
                                                     ${customer.registered === 'registered' || customer.registration_status === 'registered' ? 
@@ -817,6 +786,24 @@ function deleteSelected() {
             deleteBtn.innerHTML = originalHtml;
         });
     }
+}
+
+function escapeHtml(text, forAttribute = false) {
+    if (text === undefined || text === null) {
+        return '';
+    }
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    };
+    let escaped = String(text).replace(/[&<>"']/g, (char) => map[char]);
+    if (forAttribute) {
+        escaped = escaped.replace(/\r?\n/g, '&#10;');
+    }
+    return escaped;
 }
 
 function formatDate(dateString) {

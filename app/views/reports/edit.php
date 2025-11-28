@@ -81,14 +81,6 @@ $headerButton = '<a href="/Quan_ly_trung_tam/public/reports/' . ($report['id'] ?
 </style>
 
 <div class="p-3">
-    <?php if (isset($_SESSION['error'])): ?>
-        <div class="alert alert-danger">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            <?= htmlspecialchars($_SESSION['error']) ?>
-        </div>
-        <?php unset($_SESSION['error']); ?>
-    <?php endif; ?>
-
     <form id="editReportForm" method="POST" action="/Quan_ly_trung_tam/public/reports/<?= $report['id'] ?>/update">
         <div class="row">
             <div class="col-md-8">

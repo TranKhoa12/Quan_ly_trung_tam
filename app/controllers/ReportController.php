@@ -236,10 +236,39 @@ class ReportController extends BaseController
                                     // Remove commas from amount
                                     $amount = str_replace(',', '', $revenueData['amount'] ?? '0');
                                     
-                                    // Handle file upload for this revenue entry
-                                    $confirmationImage = null;
+                                    // Handle multiple file uploads for this revenue entry
+                                    $confirmationImages = [];
                                     $fileFieldName = 'revenue_image_' . $customerIndex;
-                                    if (isset($_FILES[$fileFieldName]) && $_FILES[$fileFieldName]['error'] === UPLOAD_ERR_OK) {
+                                    if (isset($_FILES[$fileFieldName]) && is_array($_FILES[$fileFieldName]['error'])) {
+                                        // Multiple files
+                                        $fileCount = count($_FILES[$fileFieldName]['error']);
+                                        for ($i = 0; $i < $fileCount; $i++) {
+                                            if ($_FILES[$fileFieldName]['error'][$i] === UPLOAD_ERR_OK) {
+                                                try {
+                                                    $studentName = $this->slugify(trim($revenueData['student_name'] ?? $customer['full_name'] ?? ''));
+                                                    $dateStr = date('dmY', strtotime($revenueData['payment_date'] ?? date('Y-m-d')));
+                                                    $receiptCodePart = !empty($revenueData['receipt_code']) ? $revenueData['receipt_code'] : 'NO_CODE';
+                                                    
+                                                    $ext = pathinfo($_FILES[$fileFieldName]['name'][$i], PATHINFO_EXTENSION);
+                                                    $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '_' . ($i + 1) . '.' . $ext;
+                                                    
+                                                    $tempFile = [
+                                                        'tmp_name' => $_FILES[$fileFieldName]['tmp_name'][$i],
+                                                        'name' => $_FILES[$fileFieldName]['name'][$i],
+                                                        'error' => $_FILES[$fileFieldName]['error'][$i]
+                                                    ];
+                                                    
+                                                    $uploadedFile = $this->uploadFileWithCustomName($tempFile, $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                                                    if ($uploadedFile) {
+                                                        $confirmationImages[] = $uploadedFile;
+                                                    }
+                                                } catch (Exception $e) {
+                                                    error_log('Error uploading revenue image ' . ($i + 1) . ': ' . $e->getMessage());
+                                                }
+                                            }
+                                        }
+                                    } elseif (isset($_FILES[$fileFieldName]) && $_FILES[$fileFieldName]['error'] === UPLOAD_ERR_OK) {
+                                        // Single file (backward compatibility)
                                         try {
                                             $studentName = $this->slugify(trim($revenueData['student_name'] ?? $customer['full_name'] ?? ''));
                                             $dateStr = date('dmY', strtotime($revenueData['payment_date'] ?? date('Y-m-d')));
@@ -248,7 +277,10 @@ class ReportController extends BaseController
                                             $ext = pathinfo($_FILES[$fileFieldName]['name'], PATHINFO_EXTENSION);
                                             $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '.' . $ext;
                                             
-                                            $confirmationImage = $this->uploadFileWithCustomName($_FILES[$fileFieldName], $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                                            $uploadedFile = $this->uploadFileWithCustomName($_FILES[$fileFieldName], $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                                            if ($uploadedFile) {
+                                                $confirmationImages[] = $uploadedFile;
+                                            }
                                         } catch (Exception $e) {
                                             error_log('Error uploading revenue image: ' . $e->getMessage());
                                         }
@@ -267,7 +299,8 @@ class ReportController extends BaseController
                                         'payment_content' => $revenueData['payment_content'] ?? 'full_payment',
                                         'staff_id' => $staffId,
                                         'notes' => $revenueData['notes'] ?? '',
-                                        'confirmation_image' => $confirmationImage
+                                        'confirmation_image' => !empty($confirmationImages) ? $confirmationImages[0] : null, // Keep first image for backward compatibility
+                                        'confirmation_images' => !empty($confirmationImages) ? json_encode($confirmationImages) : '[]'
                                     ];
                                     
                                     if ($revenueRecord['amount'] > 0 && !empty($revenueRecord['student_name'])) {
@@ -321,14 +354,40 @@ class ReportController extends BaseController
                             // Remove commas from amount
                             $amount = str_replace(',', '', $draft['amount'] ?? '0');
                             
-                            // Initialize confirmation_image as null
-                            $confirmationImage = null;
-                            
-                            // Handle file upload for this revenue entry FIRST
+                            // Handle multiple file uploads for this revenue entry
+                            $confirmationImages = [];
                             $fileFieldName = 'revenue_image_' . $index;
-                            if (isset($_FILES[$fileFieldName]) && $_FILES[$fileFieldName]['error'] === UPLOAD_ERR_OK) {
+                            if (isset($_FILES[$fileFieldName]) && is_array($_FILES[$fileFieldName]['error'])) {
+                                // Multiple files
+                                $fileCount = count($_FILES[$fileFieldName]['error']);
+                                for ($i = 0; $i < $fileCount; $i++) {
+                                    if ($_FILES[$fileFieldName]['error'][$i] === UPLOAD_ERR_OK) {
+                                        try {
+                                            $studentName = $this->slugify(trim($draft['student_name'] ?? ''));
+                                            $dateStr = date('dmY', strtotime($draft['payment_date'] ?? date('Y-m-d')));
+                                            $receiptCodePart = !empty($draft['receipt_code']) ? $draft['receipt_code'] : 'NO_CODE';
+                                            
+                                            $ext = pathinfo($_FILES[$fileFieldName]['name'][$i], PATHINFO_EXTENSION);
+                                            $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '_' . ($i + 1) . '.' . $ext;
+                                            
+                                            $tempFile = [
+                                                'tmp_name' => $_FILES[$fileFieldName]['tmp_name'][$i],
+                                                'name' => $_FILES[$fileFieldName]['name'][$i],
+                                                'error' => $_FILES[$fileFieldName]['error'][$i]
+                                            ];
+                                            
+                                            $uploadedFile = $this->uploadFileWithCustomName($tempFile, $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                                            if ($uploadedFile) {
+                                                $confirmationImages[] = $uploadedFile;
+                                            }
+                                        } catch (Exception $e) {
+                                            error_log('Error uploading revenue image ' . ($i + 1) . ': ' . $e->getMessage());
+                                        }
+                                    }
+                                }
+                            } elseif (isset($_FILES[$fileFieldName]) && $_FILES[$fileFieldName]['error'] === UPLOAD_ERR_OK) {
+                                // Single file (backward compatibility)
                                 try {
-                                    // Create custom filename using draft data
                                     $studentName = $this->slugify(trim($draft['student_name'] ?? ''));
                                     $dateStr = date('dmY', strtotime($draft['payment_date'] ?? date('Y-m-d')));
                                     $receiptCodePart = !empty($draft['receipt_code']) ? $draft['receipt_code'] : 'NO_CODE';
@@ -336,13 +395,16 @@ class ReportController extends BaseController
                                     $ext = pathinfo($_FILES[$fileFieldName]['name'], PATHINFO_EXTENSION);
                                     $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '.' . $ext;
                                     
-                                    $confirmationImage = $this->uploadFileWithCustomName($_FILES[$fileFieldName], $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                                    $uploadedFile = $this->uploadFileWithCustomName($_FILES[$fileFieldName], $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                                    if ($uploadedFile) {
+                                        $confirmationImages[] = $uploadedFile;
+                                    }
                                 } catch (Exception $e) {
                                     error_log('Error uploading revenue image: ' . $e->getMessage());
                                 }
                             }
                             
-                            // Build revenue data with uploaded image
+                            // Build revenue data with uploaded images
                             $revenueData = [
                                 'payment_date' => $draft['payment_date'] ?? date('Y-m-d'),
                                 'transfer_type' => $draft['transfer_type'] ?? 'cash',
@@ -353,7 +415,8 @@ class ReportController extends BaseController
                                 'payment_content' => $draft['payment_content'] ?? 'full_payment',
                                 'staff_id' => $staffId,
                                 'notes' => $draft['notes'] ?? '',
-                                'confirmation_image' => $confirmationImage
+                                'confirmation_image' => !empty($confirmationImages) ? $confirmationImages[0] : null,
+                                'confirmation_images' => !empty($confirmationImages) ? json_encode($confirmationImages) : '[]'
                             ];
                             
                             if ($revenueData['amount'] > 0 && !empty($revenueData['student_name'])) {

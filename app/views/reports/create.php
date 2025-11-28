@@ -318,20 +318,14 @@ ob_start();
 
                             <div class="col-12">
                                 <label for="revenue_confirmation_image" class="form-label">
-                                    <i class="fas fa-image text-info"></i> Ảnh xác nhận
+                                    <i class="fas fa-image text-info"></i> Ảnh xác nhận chuyển khoản/phiếu thu
                                 </label>
                                 <input type="file" class="form-control" id="revenue_confirmation_image" 
-                                       accept="image/*">
-                                <small class="text-muted">Tải lên ảnh xác nhận chuyển khoản (nếu có)</small>
+                                       accept="image/*" multiple>
+                                <small class="text-muted">Chấp nhận file: JPG, PNG. Tối đa 10MB. Có thể chọn nhiều ảnh.</small>
+                                <div id="imagePreviewContainer" class="mt-3 d-flex flex-wrap gap-2"></div>
                             </div>
 
-                            <div class="col-12">
-                                <label for="revenue_notes" class="form-label">
-                                    <i class="fas fa-sticky-note text-secondary"></i> Ghi chú
-                                </label>
-                                <textarea class="form-control" id="revenue_notes" rows="2" 
-                                          placeholder="Ghi chú thêm về giao dịch..."></textarea>
-                            </div>
                         </div>
                     </form>
                 </div>
@@ -471,7 +465,7 @@ ob_start();
                             data-customer-index="${customerIndex}"
                             onclick="openRevenueModal(${customerIndex})"
                             disabled>
-                        <i class="fas fa-dollar-sign me-1"></i>Nhập DT
+                        <i class="fas fa-dollar-sign me-1"></i>Nhập doanh thu
                     </button>
                     <input type="hidden" name="customers[${customerIndex}][has_revenue]" class="has-revenue-input" value="0">
                     <input type="hidden" name="customers[${customerIndex}][revenue_data]" class="revenue-data-input" value="">
@@ -1040,14 +1034,8 @@ ob_start();
                 document.getElementById('revenue_student_name').value = studentName;
                 document.getElementById('revenue_payment_date').value = '<?= date('Y-m-d') ?>';
                 
-                // Reset file input label
-                const fileInput = document.getElementById('revenue_confirmation_image');
-                const fileLabel = fileInput.nextElementSibling;
-                if (fileLabel && fileLabel.classList.contains('text-success')) {
-                    fileLabel.innerHTML = 'Tải lên ảnh xác nhận chuyển khoản (nếu có)';
-                    fileLabel.classList.remove('text-success');
-                    fileLabel.classList.add('text-muted');
-                }
+                // Clear image preview
+                document.getElementById('imagePreviewContainer').innerHTML = '';
             }
             
             // Show modal
@@ -1079,43 +1067,61 @@ ob_start();
                 receipt_code: document.getElementById('revenue_receipt_code').value,
                 transfer_type: document.getElementById('revenue_transfer_type').value,
                 payment_content: document.getElementById('revenue_payment_content').value,
-                notes: document.getElementById('revenue_notes').value,
+                notes: '',
                 has_image: false
             };
+            const mainForm = document.getElementById('reportForm');
             
-            // Handle file input
+            // Handle multiple file inputs
             const fileInput = document.getElementById('revenue_confirmation_image');
             if (fileInput.files.length > 0) {
                 revenueData.has_image = true;
-                revenueData.image_name = fileInput.files[0].name;
+                revenueData.image_count = fileInput.files.length;
+                revenueData.image_names = [];
+                
+                const dataTransfer = new DataTransfer();
+                
+                // Transfer all files
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    revenueData.image_names.push(fileInput.files[i].name);
+                    dataTransfer.items.add(fileInput.files[i]);
+                }
                 
                 // Create a hidden file input in main form with dynamic name
-                const mainForm = document.getElementById('reportForm');
                 const hiddenFileInput = document.createElement('input');
                 hiddenFileInput.type = 'file';
-                hiddenFileInput.name = `revenue_image_${currentCustomerIndex}`;
+                hiddenFileInput.name = `revenue_image_${currentCustomerIndex}[]`;
+                hiddenFileInput.multiple = true;
                 hiddenFileInput.style.display = 'none';
-                
-                // Transfer the file
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(fileInput.files[0]);
                 hiddenFileInput.files = dataTransfer.files;
-                
+                hiddenFileInput.dataset.customerIndex = currentCustomerIndex;
+
+                // Replace any previous file field for this customer
+                const existingField = mainForm.querySelector(`input[type="file"][data-customer-index="${currentCustomerIndex}"]`);
+                if (existingField) {
+                    existingField.remove();
+                }
+
                 mainForm.appendChild(hiddenFileInput);
             }
             
             // Get the customer row
-            const row = document.querySelector(`tr:has([data-customer-index="${currentCustomerIndex}"])`);
+            const revenueButton = document.querySelector(`.revenue-btn[data-customer-index="${currentCustomerIndex}"]`);
+            const row = revenueButton ? revenueButton.closest('tr') : null;
+            if (!row) {
+                console.error('Unable to locate customer row for index', currentCustomerIndex);
+            }
             if (row) {
                 // Store revenue data
                 row.querySelector('.has-revenue-input').value = '1';
                 row.querySelector('.revenue-data-input').value = JSON.stringify(revenueData);
                 
                 // Update button text
-                const revenueBtn = row.querySelector('.revenue-btn');
-                revenueBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Đã nhập';
-                revenueBtn.classList.remove('btn-outline-primary');
-                revenueBtn.classList.add('btn-success');
+                if (revenueButton) {
+                    revenueButton.innerHTML = '<i class="fas fa-check-circle me-1"></i>Đã nhập';
+                    revenueButton.classList.remove('btn-outline-primary');
+                    revenueButton.classList.add('btn-success');
+                }
             }
             
             // Close modal
@@ -1184,25 +1190,88 @@ ob_start();
             }
         });
         
-        // File input change handler - show filename
+        // File input change handler - show multiple image previews
         document.getElementById('revenue_confirmation_image').addEventListener('change', function(e) {
-            const fileLabel = this.nextElementSibling;
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            previewContainer.innerHTML = ''; // Clear previous previews
+            
             if (this.files.length > 0) {
-                const fileName = this.files[0].name;
-                const fileSize = (this.files[0].size / 1024).toFixed(2); // KB
-                if (fileLabel) {
-                    fileLabel.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> ${fileName} (${fileSize} KB)</span>`;
-                    fileLabel.classList.remove('text-muted');
-                    fileLabel.classList.add('text-success');
-                }
+                console.log('Files selected:', this.files.length); // Debug
+                
+                Array.from(this.files).forEach((file, index) => {
+                    console.log(`Processing file ${index}:`, file.name, file.type); // Debug
+                    
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(evt) {
+                            // Create wrapper div
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'd-flex flex-column align-items-center';
+                            wrapper.style.width = '150px';
+                            
+                            // Create preview container
+                            const previewDiv = document.createElement('div');
+                            previewDiv.className = 'position-relative border rounded';
+                            previewDiv.style.cssText = 'width: 150px; height: 150px; overflow: hidden;';
+                            
+                            // Create image
+                            const img = document.createElement('img');
+                            img.src = evt.target.result;
+                            img.className = 'w-100 h-100';
+                            img.style.objectFit = 'cover';
+                            
+                            // Create remove button
+                            const removeBtn = document.createElement('button');
+                            removeBtn.type = 'button';
+                            removeBtn.className = 'btn btn-danger btn-sm position-absolute';
+                            removeBtn.style.cssText = 'top: 5px; right: 5px; padding: 2px 6px; font-size: 12px;';
+                            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                            removeBtn.onclick = function(e) {
+                                e.preventDefault();
+                                removeImage(index);
+                            };
+                            
+                            // Create file info
+                            const fileInfo = document.createElement('small');
+                            fileInfo.className = 'text-muted text-center mt-2';
+                            fileInfo.style.cssText = 'word-break: break-all; font-size: 11px;';
+                            fileInfo.textContent = `${file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name}\n(${(file.size / 1024).toFixed(1)} KB)`;
+                            
+                            // Append elements
+                            previewDiv.appendChild(img);
+                            previewDiv.appendChild(removeBtn);
+                            wrapper.appendChild(previewDiv);
+                            wrapper.appendChild(fileInfo);
+                            previewContainer.appendChild(wrapper);
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        console.warn(`File ${file.name} is not an image`); // Debug
+                    }
+                });
             } else {
-                if (fileLabel) {
-                    fileLabel.innerHTML = 'Tải lên ảnh xác nhận chuyển khoản (nếu có)';
-                    fileLabel.classList.remove('text-success');
-                    fileLabel.classList.add('text-muted');
-                }
+                console.log('No files selected'); // Debug
             }
         });
+        
+        function removeImage(index) {
+            console.log('Removing image at index:', index); // Debug
+            const fileInput = document.getElementById('revenue_confirmation_image');
+            const dt = new DataTransfer();
+            
+            Array.from(fileInput.files).forEach((file, i) => {
+                if (i !== index) {
+                    dt.items.add(file);
+                }
+            });
+            
+            fileInput.files = dt.files;
+            console.log('Remaining files:', fileInput.files.length); // Debug
+            
+            // Trigger change event to update preview
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }
     </script>
 
 <?php

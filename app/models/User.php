@@ -36,7 +36,7 @@ class User extends BaseModel
 
     public function getStaffList()
     {
-        return $this->where(['status' => 'active'], 'full_name ASC');
+        return $this->where(['role' => 'staff', 'status' => 'active'], 'full_name ASC');
     }
 
     public function getAdminList()

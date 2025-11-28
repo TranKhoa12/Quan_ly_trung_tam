@@ -174,31 +174,57 @@ class RevenueController extends BaseController
                 'notes' => $_POST['notes'] ?? ''
             ];
 
-            // Handle file upload BEFORE validation to preserve file
-            if (isset($_FILES['confirmation_image']) && $_FILES['confirmation_image']['error'] === UPLOAD_ERR_OK) {
-                try {
-                    // Create custom filename: ReceiptCode_StudentName_Date
-                    $studentName = $this->slugify($data['student_name']);
-                    $dateStr = date('dmY', strtotime($data['payment_date']));
-                    $receiptCodePart = !empty($data['receipt_code']) ? $data['receipt_code'] : 'NO_CODE';
-                    
-                    $ext = pathinfo($_FILES['confirmation_image']['name'], PATHINFO_EXTENSION);
-                    $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '.' . $ext;
-                    
-                    $fileName = $this->uploadFileWithCustomName($_FILES['confirmation_image'], $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
-                    $data['confirmation_image'] = $fileName;
-                    $uploadedFileName = $fileName; // Store for potential cleanup
-                } catch (Exception $e) {
-                    throw new Exception('Lỗi upload file: ' . $e->getMessage());
+            // Handle multiple file uploads BEFORE validation to preserve files
+            $uploadedFileNames = [];
+            if (isset($_FILES['confirmation_images']) && is_array($_FILES['confirmation_images']['name'])) {
+                $fileCount = count($_FILES['confirmation_images']['name']);
+                
+                for ($i = 0; $i < $fileCount; $i++) {
+                    // Check if file was uploaded successfully
+                    if ($_FILES['confirmation_images']['error'][$i] === UPLOAD_ERR_OK) {
+                        try {
+                            // Create custom filename: ReceiptCode_StudentName_Date_Index
+                            $studentName = $this->slugify($data['student_name']);
+                            $dateStr = date('dmY', strtotime($data['payment_date']));
+                            $receiptCodePart = !empty($data['receipt_code']) ? $data['receipt_code'] : 'NO_CODE';
+                            
+                            $ext = pathinfo($_FILES['confirmation_images']['name'][$i], PATHINFO_EXTENSION);
+                            $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '_' . ($i + 1) . '.' . $ext;
+                            
+                            // Create temporary single file array for upload function
+                            $singleFile = [
+                                'name' => $_FILES['confirmation_images']['name'][$i],
+                                'type' => $_FILES['confirmation_images']['type'][$i],
+                                'tmp_name' => $_FILES['confirmation_images']['tmp_name'][$i],
+                                'error' => $_FILES['confirmation_images']['error'][$i],
+                                'size' => $_FILES['confirmation_images']['size'][$i]
+                            ];
+                            
+                            $fileName = $this->uploadFileWithCustomName($singleFile, $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                            $uploadedFileNames[] = $fileName;
+                        } catch (Exception $e) {
+                            // Clean up previously uploaded files on error
+                            foreach ($uploadedFileNames as $uploaded) {
+                                $this->deleteUploadedFile($uploaded);
+                            }
+                            throw new Exception('Lỗi upload file ' . ($i + 1) . ': ' . $e->getMessage());
+                        }
+                    }
+                }
+                
+                // Store all images in both confirmation_image and confirmation_images
+                if (!empty($uploadedFileNames)) {
+                    $data['confirmation_image'] = $uploadedFileNames[0]; // First image for backward compatibility
+                    $data['confirmation_images'] = json_encode($uploadedFileNames); // All images as JSON array
                 }
             }
 
             // Check duplicate receipt code AFTER file upload
             if (!empty($data['receipt_code'])) {
                 if ($this->revenueModel->checkReceiptCodeExists($data['receipt_code'])) {
-                    // If duplicate found and file was uploaded, delete it
-                    if ($uploadedFileName) {
-                        $this->deleteUploadedFile($uploadedFileName);
+                    // If duplicate found and files were uploaded, delete them
+                    foreach ($uploadedFileNames as $uploaded) {
+                        $this->deleteUploadedFile($uploaded);
                     }
                     throw new Exception('Mã phiếu thu "' . $data['receipt_code'] . '" đã tồn tại! Vui lòng sử dụng mã khác.');
                 }

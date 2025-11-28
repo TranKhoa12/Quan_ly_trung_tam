@@ -68,25 +68,12 @@ ob_start();
 
                     <div class="mb-3">
                         <label for="confirmation_image" class="form-label">Ảnh xác nhận chuyển khoản/phiếu thu</label>
-                        <input type="file" class="form-control" id="confirmation_image" name="confirmation_image" 
-                               accept="image/*">
-                        <div class="form-text">Chấp nhận file: JPG, PNG. Tối đa 10MB.  </div>
+                        <input type="file" class="form-control" id="confirmation_image" name="confirmation_images[]" 
+                               accept="image/*" multiple>
+                        <div class="form-text">Chấp nhận file: JPG, PNG. Tối đa 10MB mỗi ảnh. Có thể chọn nhiều ảnh.</div>
                         
-                        <!-- Image Preview - Thumbnail -->
-                        <div id="image_preview" class="mt-3" style="display: none;">
-                            <div class="d-flex align-items-start gap-3">
-                                <img id="preview_img" class="rounded border" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" onclick="openImageFullView()" title="Click để xem ảnh đầy đủ">
-                                <div>
-                                    <p class="mb-2 text-muted small">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Click vào ảnh để xem kích thước đầy đủ
-                                    </p>
-                                    <button type="button" class="btn btn-outline-danger btn-sm" id="clear_image_btn">
-                                        <i class="fas fa-times me-2"></i>Xóa ảnh
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Multiple Image Preview Container -->
+                        <div id="image_preview_container" class="mt-3 d-flex flex-wrap gap-2"></div>
                         
                         <!-- Modal for Full Image View -->
                         <div class="modal fade" id="imageFullViewModal" tabindex="-1">
@@ -341,58 +328,106 @@ document.querySelector('form').addEventListener('submit', function(e) {
     }
 });
 
-// Image upload and OCR functionality
+// Image upload and preview functionality for multiple files
 const confirmationImageInput = document.getElementById('confirmation_image');
-const imagePreview = document.getElementById('image_preview');
-const previewImg = document.getElementById('preview_img');
-const clearImageBtn = document.getElementById('clear_image_btn');
+const imagePreviewContainer = document.getElementById('image_preview_container');
 const ocrStatus = document.getElementById('ocr_status');
 
-// Handle image selection with auto OCR
+// Handle multiple image selection
 confirmationImageInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        // Validate file type
-        if (!file.type.match('image.*')) {
-            alert('Vui lòng chọn file ảnh (JPG, PNG)');
-            e.target.value = '';
-            return;
-        }
+    imagePreviewContainer.innerHTML = ''; // Clear previous previews
+    
+    if (this.files.length > 0) {
+        console.log('Files selected:', this.files.length);
         
-        // Validate file size (10MB for better OCR quality)
-        if (file.size > 10 * 1024 * 1024) {
-            alert('File ảnh quá lớn. Vui lòng chọn file nhỏ hơn 10MB');
-            e.target.value = '';
-            return;
-        }
-        
-        // Show preview
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            previewImg.src = e.target.result;
-            imagePreview.style.display = 'block';
+        Array.from(this.files).forEach((file, index) => {
+            // Validate file type
+            if (!file.type.match('image.*')) {
+                console.warn(`File ${file.name} is not an image`);
+                return;
+            }
             
-            // OCR functionality temporarily disabled
-            // setTimeout(() => {
-            //     processImageWithOCR(file);
-            // }, 500);
-        };
-        reader.readAsDataURL(file);
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert(`File ${file.name} quá lớn. Vui lòng chọn file nhỏ hơn 10MB`);
+                return;
+            }
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                // Create wrapper div
+                const wrapper = document.createElement('div');
+                wrapper.className = 'd-flex flex-column align-items-center';
+                wrapper.style.width = '150px';
+                
+                // Create preview container
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'position-relative border rounded';
+                previewDiv.style.cssText = 'width: 150px; height: 150px; overflow: hidden;';
+                
+                // Create image
+                const img = document.createElement('img');
+                img.src = evt.target.result;
+                img.className = 'w-100 h-100';
+                img.style.objectFit = 'cover';
+                img.style.cursor = 'pointer';
+                img.title = 'Click để xem ảnh đầy đủ';
+                img.onclick = function() { openImageFullView(evt.target.result); };
+                
+                // Create remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-danger btn-sm position-absolute';
+                removeBtn.style.cssText = 'top: 5px; right: 5px; padding: 2px 6px; font-size: 12px;';
+                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                removeBtn.onclick = function(e) {
+                    e.preventDefault();
+                    removeImage(index);
+                };
+                
+                // Create file info
+                const fileInfo = document.createElement('small');
+                fileInfo.className = 'text-muted text-center mt-2';
+                fileInfo.style.cssText = 'word-break: break-all; font-size: 11px;';
+                fileInfo.textContent = `${file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name}\n(${(file.size / 1024).toFixed(1)} KB)`;
+                
+                // Append elements
+                previewDiv.appendChild(img);
+                previewDiv.appendChild(removeBtn);
+                wrapper.appendChild(previewDiv);
+                wrapper.appendChild(fileInfo);
+                imagePreviewContainer.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
+        });
     }
 });
 
-// Handle clear image
-clearImageBtn.addEventListener('click', function() {
-    confirmationImageInput.value = '';
-    imagePreview.style.display = 'none';
-    ocrStatus.style.display = 'none';
-});
+// Remove image by index
+function removeImage(index) {
+    console.log('Removing image at index:', index);
+    const fileInput = document.getElementById('confirmation_image');
+    const dt = new DataTransfer();
+    
+    Array.from(fileInput.files).forEach((file, i) => {
+        if (i !== index) {
+            dt.items.add(file);
+        }
+    });
+    
+    fileInput.files = dt.files;
+    console.log('Remaining files:', fileInput.files.length);
+    
+    // Trigger change event to update preview
+    const event = new Event('change', { bubbles: true });
+    fileInput.dispatchEvent(event);
+}
 
 // Open full image view in modal
-function openImageFullView() {
+function openImageFullView(imageSrc) {
     const fullImg = document.getElementById('modal_full_img');
-    const previewSrc = document.getElementById('preview_img').src;
-    fullImg.src = previewSrc;
+    fullImg.src = imageSrc || '';
     
     const modal = new bootstrap.Modal(document.getElementById('imageFullViewModal'));
     modal.show();

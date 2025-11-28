@@ -84,6 +84,17 @@ $router->post('/certificates/{id}/update', 'Certificate@update');
 $router->post('/certificates/{id}/status', 'Certificate@updateStatus');
 $router->post('/certificates/{id}/receive', 'Certificate@updateReceiveStatus');
 $router->put('/certificates/{id}/approve', 'Certificate@approve');
+$router->get('/certificate-request', 'PublicCertificate@showForm');
+$router->post('/certificate-request', 'PublicCertificate@submit');
+
+// Completion slips routes
+$router->get('/completion-slips', 'CompletionSlip@index');
+$router->get('/completion-slips/create', 'CompletionSlip@create');
+$router->post('/completion-slips', 'CompletionSlip@store');
+$router->get('/completion-slips/{id}/edit', 'CompletionSlip@edit');
+$router->post('/completion-slips/{id}/update', 'CompletionSlip@update');
+$router->post('/completion-slips/{id}/delete', 'CompletionSlip@delete');
+$router->post('/completion-slips/delete-multiple', 'CompletionSlip@deleteMultiple');
 
 // Staff management routes (Admin only)
 $router->get('/staff', 'Staff@index');
