@@ -396,6 +396,13 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                                 <span class="badge bg-info ms-auto">Mới</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'teaching_shifts' ? 'active' : '' ?>"
+                               href="/Quan_ly_trung_tam/public/teaching-shifts">
+                                <i class="fas fa-calendar-check me-2"></i> Lịch dạy &amp; Ca của tôi
+                                <span class="badge bg-light text-dark ms-auto">Ca dạy</span>
+                            </a>
+                        </li>
                         
                         <!-- Xem thông tin (chỉ đọc) -->
                         <li class="nav-item mt-3">
@@ -444,6 +451,12 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                                 <i class="fas fa-user-check me-2"></i> Phiếu hoàn thành HV
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'teaching_shifts' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/teaching-shifts/admin">
+                                <i class="fas fa-calendar-check me-2"></i> Quản lý ca dạy
+                            </a>
+                        </li>
                         <?php endif; ?>
                         
                         <!-- Admin Only Features -->
@@ -465,6 +478,12 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                             <a class="nav-link <?= $activePage === 'courses' ? 'active' : '' ?>" 
                                href="/Quan_ly_trung_tam/public/courses">
                                 <i class="fas fa-book me-2"></i> Quản lý khóa học
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'shift_payroll' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/teaching-shifts/payroll">
+                                <i class="fas fa-money-check-alt me-2"></i> Bảng lương ca dạy
                             </a>
                         </li>
                         <li class="nav-item">

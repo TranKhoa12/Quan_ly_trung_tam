@@ -1,0 +1,2 @@
+<?php
+// Commission management removed

@@ -70,28 +70,13 @@ class DashboardController extends BaseController
             'total_revenue_today' => $this->getTodayRevenue(),
             'total_students' => $this->getTotalStudents(),
             'pending_certificates' => $this->getPendingCertificates(),
-            'total_visitors_month' => 150,
-            'total_registered_month' => 85,
-            'total_revenue_month' => 25000000
+            'total_visitors_month' => $this->getMonthVisitors(),
+            'total_registered_month' => $this->getMonthRegistered(),
+            'total_revenue_month' => $this->getMonthRevenue()
         ];
         
         // Get recent reports (tất cả nhân viên)
-        $recent_reports = [
-            [
-                'report_date' => date('Y-m-d'),
-                'report_time' => date('H:i:s'),
-                'staff_name' => 'Nguyễn Văn A',
-                'total_visitors' => 10,
-                'total_registered' => 6
-            ],
-            [
-                'report_date' => date('Y-m-d', strtotime('-1 day')),
-                'report_time' => '14:30:00',
-                'staff_name' => 'Trần Thị B',
-                'total_visitors' => 8,
-                'total_registered' => 5
-            ]
-        ];
+        $recent_reports = $this->getRecentReports();
         
         // Sử dụng layout mới cho giao diện admin hiện đại
         $this->view('dashboard/admin-modern', [
@@ -148,46 +133,126 @@ class DashboardController extends BaseController
     // Methods for Staff Dashboard
     private function getMyTodayReportsCount($staff_id)
     {
-        // Tạm thời return sample data, sau này sẽ query database
-        return rand(1, 5);
+        if (!$this->db) {
+            return 0;
+        }
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as count FROM reports 
+             WHERE staff_id = ? AND DATE(report_date) = CURDATE()",
+            [$staff_id]
+        );
+        return $result['count'] ?? 0;
     }
 
     private function getMyTodayRevenue($staff_id) 
     {
-        // Tạm thời return sample data
-        return rand(500000, 2000000);
+        if (!$this->db) {
+            return 0;
+        }
+        $result = $this->db->fetch(
+            "SELECT SUM(rr.amount) as total 
+             FROM revenue_reports rr
+             INNER JOIN reports r ON DATE(rr.payment_date) = r.report_date
+             WHERE r.staff_id = ? AND DATE(rr.payment_date) = CURDATE()",
+            [$staff_id]
+        );
+        return $result['total'] ?? 0;
     }
 
     private function getMyVisitorsToday($staff_id)
     {
-        // Tạm thời return sample data
-        return rand(5, 20);
+        if (!$this->db) {
+            return 0;
+        }
+        $result = $this->db->fetch(
+            "SELECT SUM(total_visitors) as total FROM reports 
+             WHERE staff_id = ? AND DATE(report_date) = CURDATE()",
+            [$staff_id]
+        );
+        return $result['total'] ?? 0;
     }
 
     private function getMyCertificatesPending($staff_id)
     {
-        // Tạm thời return sample data
-        return rand(0, 3);
+        if (!$this->db) {
+            return 0;
+        }
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as count FROM certificates 
+             WHERE created_by = ? AND approval_status = 'pending'",
+            [$staff_id]
+        );
+        return $result['count'] ?? 0;
     }
 
     private function getMyRecentReports($staff_id)
     {
-        // Sample data cho báo cáo của nhân viên hiện tại
-        return [
-            [
-                'report_date' => date('Y-m-d'),
-                'report_time' => date('H:i:s'),
-                'total_visitors' => rand(8, 15),
-                'total_registered' => rand(3, 8),
-                'revenue_amount' => rand(500000, 1500000)
-            ],
-            [
-                'report_date' => date('Y-m-d', strtotime('-1 day')),
-                'report_time' => '16:30:00',
-                'total_visitors' => rand(5, 12),
-                'total_registered' => rand(2, 6),
-                'revenue_amount' => rand(300000, 1200000)
-            ]
-        ];
+        if (!$this->db) {
+            return [];
+        }
+        $reports = $this->db->fetchAll(
+            "SELECT report_date, report_time, total_visitors, total_registered
+             FROM reports
+             WHERE staff_id = ?
+             ORDER BY report_date DESC, report_time DESC
+             LIMIT 5",
+            [$staff_id]
+        );
+        return $reports ?? [];
+    }
+
+    private function getMonthVisitors()
+    {
+        if (!$this->db) {
+            return 0;
+        }
+        $result = $this->db->fetch(
+            "SELECT SUM(total_visitors) as total FROM reports 
+             WHERE MONTH(report_date) = MONTH(CURRENT_DATE()) 
+             AND YEAR(report_date) = YEAR(CURRENT_DATE())"
+        );
+        return $result['total'] ?? 0;
+    }
+
+    private function getMonthRegistered()
+    {
+        if (!$this->db) {
+            return 0;
+        }
+        $result = $this->db->fetch(
+            "SELECT SUM(total_registered) as total FROM reports 
+             WHERE MONTH(report_date) = MONTH(CURRENT_DATE()) 
+             AND YEAR(report_date) = YEAR(CURRENT_DATE())"
+        );
+        return $result['total'] ?? 0;
+    }
+
+    private function getMonthRevenue()
+    {
+        if (!$this->db) {
+            return 0;
+        }
+        $result = $this->db->fetch(
+            "SELECT SUM(amount) as total FROM revenue_reports 
+             WHERE MONTH(payment_date) = MONTH(CURRENT_DATE()) 
+             AND YEAR(payment_date) = YEAR(CURRENT_DATE())"
+        );
+        return $result['total'] ?? 0;
+    }
+
+    private function getRecentReports()
+    {
+        if (!$this->db) {
+            return [];
+        }
+        $reports = $this->db->fetchAll(
+            "SELECT r.report_date, r.report_time, r.total_visitors, r.total_registered,
+                    u.full_name as staff_name
+             FROM reports r
+             LEFT JOIN users u ON r.staff_id = u.id
+             ORDER BY r.report_date DESC, r.report_time DESC
+             LIMIT 10"
+        );
+        return $reports ?? [];
     }
 }

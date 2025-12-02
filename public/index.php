@@ -97,6 +97,35 @@ $router->post('/completion-slips/{id}/update', 'CompletionSlip@update');
 $router->post('/completion-slips/{id}/delete', 'CompletionSlip@delete');
 $router->post('/completion-slips/delete-multiple', 'CompletionSlip@deleteMultiple');
 
+// Teaching shift routes
+$router->get('/teaching-shifts', 'TeachingShift@index');
+$router->post('/teaching-shifts/register', 'TeachingShift@store');
+$router->get('/teaching-shifts/admin', 'TeachingShift@admin');
+$router->get('/teaching-shifts/admin/create', 'TeachingShift@adminCreate');
+$router->post('/teaching-shifts/admin/create', 'TeachingShift@adminStore');
+$router->post('/teaching-shifts/admin/create-multiple', 'TeachingShift@adminCreateMultiple');
+$router->get('/teaching-shifts/payroll', 'TeachingShift@payroll');
+$router->get('/teaching-shifts/payroll/report', 'TeachingShift@payrollReport');
+$router->post('/teaching-shifts/payroll/finalize', 'TeachingShift@finalizePayroll');
+$router->post('/teaching-shifts/payroll/cancel', 'TeachingShift@cancelPayroll');
+$router->post('/teaching-shifts/payroll/save-staff', 'TeachingShift@saveStaffPayroll');
+$router->post('/teaching-shifts/payroll/cancel-staff', 'TeachingShift@cancelStaffPayroll');
+$router->get('/teaching-shifts/payroll/print', 'TeachingShift@printPayslip');
+$router->get('/teaching-shifts/transfer/{registrationId}', 'TeachingShift@transferForm');
+$router->post('/teaching-shifts/transfer/store', 'TeachingShift@transferStore');
+$router->get('/teaching-shifts/transfers/my', 'TeachingShift@myTransfers');
+$router->get('/teaching-shifts/transfers/list', 'TeachingShift@transferList');
+$router->post('/teaching-shifts/transfer/approve/{transferId}', 'TeachingShift@transferApprove');
+$router->post('/teaching-shifts/transfer/reject/{transferId}', 'TeachingShift@transferReject');
+$router->post('/teaching-shifts/transfer/delete/{transferId}', 'TeachingShift@transferDelete');
+$router->get('/teaching-shifts/transfer/detail/{transferId}', 'TeachingShift@transferDetail');
+$router->post('/teaching-shifts/bulk-action', 'TeachingShift@bulkAction');
+$router->post('/teaching-shifts/quick-approve', 'TeachingShift@quickApprove');
+$router->post('/teaching-shifts/quick-reject', 'TeachingShift@quickReject');
+$router->post('/teaching-shifts/{id}/cancel', 'TeachingShift@cancel');
+$router->post('/teaching-shifts/{id}/status', 'TeachingShift@updateStatus');
+$router->post('/teaching-shifts/{id}/delete', 'TeachingShift@delete');
+
 // Staff management routes (Admin only)
 $router->get('/staff', 'Staff@index');
 $router->get('/staff/create', 'Staff@create');

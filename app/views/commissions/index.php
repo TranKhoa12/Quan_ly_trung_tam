@@ -1,0 +1,2 @@
+<?php
+// Commission view removed

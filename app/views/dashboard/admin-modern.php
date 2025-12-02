@@ -26,17 +26,7 @@ ob_start();
                 </p>
             </div>
         </div>
-        <div class="col-md-4 text-end">
-            <div class="admin-controls">
-                <button class="btn btn-primary me-2" onclick="showSystemHealth()">
-                    <i class="fas fa-heartbeat me-1"></i>Hệ thống
-                </button>
-                <button class="btn btn-outline-secondary" onclick="exportReport()">
-                    <i class="fas fa-download me-1"></i>Xuất báo cáo
-                </button>
-            </div>
         </div>
-    </div>
 </div>
 
 <!-- Admin Stats Grid -->
@@ -172,7 +162,7 @@ ob_start();
         </div>
 
         <!-- Quản lý doanh thu -->
-    <div class="action-card" onclick="window.location.href='<?= $adminBasePath ?>/revenue/admin'">
+    <div class="action-card" onclick="window.location.href='<?= $adminBasePath ?>/revenue'">
             <div class="action-icon success">
                 <i class="fas fa-chart-line"></i>
             </div>
@@ -186,18 +176,18 @@ ob_start();
             </div>
         </div>
 
-        <!-- Cài đặt hệ thống -->
-    <div class="action-card" onclick="window.location.href='<?= $adminBasePath ?>/settings'">
-            <div class="action-icon error">
-                <i class="fas fa-cogs"></i>
+        <!-- Quản lý chứng nhận -->
+    <div class="action-card" onclick="window.location.href='<?= $adminBasePath ?>/certificates'">
+            <div class="action-icon info">
+                <i class="fas fa-certificate"></i>
             </div>
-            <h4 class="action-title">Cài đặt hệ thống</h4>
+            <h4 class="action-title">Quản lý chứng nhận</h4>
             <p class="action-description">
-                Cấu hình hệ thống, backup dữ liệu và quản lý bảo mật
+                Cấp phát và theo dõi chứng nhận hoàn thành khóa học
             </p>
             <div class="action-meta">
-                <span class="action-badge modern-badge error">Hệ thống</span>
-                <span class="action-badge modern-badge warning">Admin only</span>
+                <span class="action-badge modern-badge info">Đào tạo</span>
+                <span class="action-badge modern-badge warning"><?= $stats['pending_certificates'] ?> chờ duyệt</span>
             </div>
         </div>
     </div>
@@ -281,59 +271,59 @@ ob_start();
         </div>
     </div>
 
-    <!-- System Status & Quick Stats -->
+    <!-- Quick Access & Statistics -->
     <div class="col-lg-4">
         <div class="row g-4">
-            <!-- System Health -->
+            <!-- Monthly Statistics -->
             <div class="col-12">
                 <div class="data-table">
                     <div class="table-header">
-                        <h4 class="table-title">Tình trạng hệ thống</h4>
+                        <h4 class="table-title">Thống kê tháng này</h4>
                     </div>
                     <div class="system-health p-3">
                         <div class="health-item">
-                            <div class="health-indicator success"></div>
-                            <span>Máy chủ</span>
-                            <span class="status-text ms-auto">Hoạt động tốt</span>
+                            <i class="fas fa-users text-primary me-2"></i>
+                            <span>Khách đến tư vấn</span>
+                            <span class="status-text ms-auto fw-bold"><?= $stats['total_visitors_month'] ?? 0 ?></span>
                         </div>
                         <div class="health-item">
-                            <div class="health-indicator success"></div>
-                            <span>Cơ sở dữ liệu</span>
-                            <span class="status-text ms-auto">Kết nối ổn định</span>
+                            <i class="fas fa-user-plus text-success me-2"></i>
+                            <span>Học viên đăng ký</span>
+                            <span class="status-text ms-auto fw-bold"><?= $stats['total_registered_month'] ?? 0 ?></span>
                         </div>
                         <div class="health-item">
-                            <div class="health-indicator warning"></div>
-                            <span>Bộ nhớ</span>
-                            <span class="status-text ms-auto">78% sử dụng</span>
+                            <i class="fas fa-chart-line text-info me-2"></i>
+                            <span>Doanh thu tháng</span>
+                            <span class="status-text ms-auto fw-bold"><?= number_format($stats['total_revenue_month'] ?? 0) ?>đ</span>
                         </div>
                         <div class="health-item">
-                            <div class="health-indicator success"></div>
-                            <span>Backup</span>
-                            <span class="status-text ms-auto">Cập nhật 2h trước</span>
+                            <i class="fas fa-graduation-cap text-warning me-2"></i>
+                            <span>Học viên đang học</span>
+                            <span class="status-text ms-auto fw-bold"><?= $stats['total_students'] ?></span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            <!-- Quick Links -->
             <div class="col-12">
                 <div class="data-table">
                     <div class="table-header">
-                        <h4 class="table-title">Thao tác nhanh</h4>
+                        <h4 class="table-title">Truy cập nhanh</h4>
                     </div>
                     <div class="quick-actions p-3">
-                        <button class="quick-action-btn primary" onclick="createBackup()">
-                            <i class="fas fa-download me-2"></i>Sao lưu dữ liệu
-                        </button>
-                        <button class="quick-action-btn success" onclick="exportAllReports()">
-                            <i class="fas fa-file-export me-2"></i>Xuất tất cả báo cáo
-                        </button>
-                        <button class="quick-action-btn info" onclick="sendNotificationToAll()">
-                            <i class="fas fa-bullhorn me-2"></i>Gửi thông báo
-                        </button>
-                        <button class="quick-action-btn warning" onclick="viewSystemLogs()">
-                            <i class="fas fa-list-ul me-2"></i>Xem logs hệ thống
-                        </button>
+                        <a href="<?= $adminBasePath ?>/reports" class="quick-action-btn primary text-decoration-none">
+                            <i class="fas fa-chart-bar me-2"></i>Xem tất cả báo cáo
+                        </a>
+                        <a href="<?= $adminBasePath ?>/revenue" class="quick-action-btn success text-decoration-none">
+                            <i class="fas fa-money-bill-wave me-2"></i>Xem doanh thu
+                        </a>
+                        <a href="<?= $adminBasePath ?>/certificates" class="quick-action-btn info text-decoration-none">
+                            <i class="fas fa-certificate me-2"></i>Duyệt chứng nhận
+                        </a>
+                        <a href="<?= $adminBasePath ?>/teaching-shifts/admin" class="quick-action-btn warning text-decoration-none">
+                            <i class="fas fa-calendar-alt me-2"></i>Lịch ca dạy
+                        </a>
                     </div>
                 </div>
             </div>
@@ -341,85 +331,11 @@ ob_start();
     </div>
 </div>
 
-<!-- JavaScript for Admin Dashboard -->
 <script>
 // Admin Dashboard Functions
-function showSystemHealth() {
-    alert('Hệ thống đang hoạt động bình thường\n\n✅ Máy chủ: Hoạt động tốt\n✅ Database: Kết nối ổn định\n⚠️ Bộ nhớ: 78% sử dụng\n✅ Backup: Cập nhật 2h trước');
-}
-
-function exportReport() {
-    const overlay = createLoadingOverlay('Đang chuẩn bị báo cáo xuất...');
-    document.body.appendChild(overlay);
-    
-    setTimeout(() => {
-        document.body.removeChild(overlay);
-        alert('Báo cáo đã được xuất thành công!');
-    }, 2000);
-}
-
 function viewDetailedReport(reportDate) {
-    window.location.href = '<?= $adminBasePath ?>/reports/admin/view/' + reportDate;
+    window.location.href = '<?= $adminBasePath ?>/reports';
 }
-
-function createBackup() {
-    if (confirm('Bạn có chắc muốn tạo bản sao lưu dữ liệu?')) {
-        const overlay = createLoadingOverlay('Đang tạo bản sao lưu...');
-        document.body.appendChild(overlay);
-        
-        setTimeout(() => {
-            document.body.removeChild(overlay);
-            alert('Tạo bản sao lưu thành công!');
-        }, 3000);
-    }
-}
-
-function exportAllReports() {
-    const overlay = createLoadingOverlay('Đang xuất tất cả báo cáo...');
-    document.body.appendChild(overlay);
-    
-    setTimeout(() => {
-        document.body.removeChild(overlay);
-        alert('Xuất báo cáo thành công!');
-    }, 2500);
-}
-
-function sendNotificationToAll() {
-    const message = prompt('Nhập nội dung thông báo gửi đến tất cả nhân viên:');
-    if (message) {
-        alert('Đã gửi thông báo: "' + message + '" đến tất cả nhân viên');
-    }
-}
-
-function viewSystemLogs() {
-    window.open('<?= $adminBasePath ?>/admin/logs', '_blank');
-}
-
-function createLoadingOverlay(message) {
-    const overlay = document.createElement('div');
-    overlay.className = 'loading-overlay';
-    overlay.innerHTML = `
-        <div class="loading-content">
-            <div class="spinner-border text-primary mb-3" role="status"></div>
-            <p class="text-muted">${message}</p>
-        </div>
-    `;
-    return overlay;
-}
-
-// Auto-refresh admin stats every 30 seconds
-setInterval(async function() {
-    try {
-    const response = await fetch('<?= $adminBasePath ?>/api/admin/dashboard/stats');
-        if (response.ok) {
-            const data = await response.json();
-            // Update stats silently
-            console.log('Stats updated:', data);
-        }
-    } catch (error) {
-        console.error('Failed to refresh admin stats:', error);
-    }
-}, 30000);
 </script>
 
 <!-- Admin Dashboard Styles -->
@@ -457,16 +373,7 @@ setInterval(async function() {
     border-bottom: none;
 }
 
-.health-indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 0.75rem;
-}
 
-.health-indicator.success { background: var(--success-500); }
-.health-indicator.warning { background: var(--warning-500); }
-.health-indicator.error { background: var(--error-500); }
 
 .status-text {
     font-size: 0.875rem;
@@ -480,6 +387,7 @@ setInterval(async function() {
 }
 
 .quick-action-btn {
+    display: block;
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid var(--gray-300);
@@ -496,24 +404,15 @@ setInterval(async function() {
 .quick-action-btn:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
+    text-decoration: none;
 }
 
-.quick-action-btn.primary:hover { border-color: var(--primary-300); background: var(--primary-50); }
-.quick-action-btn.success:hover { border-color: var(--success-300); background: var(--success-50); }
-.quick-action-btn.info:hover { border-color: var(--info-300); background: var(--info-50); }
-.quick-action-btn.warning:hover { border-color: var(--warning-300); background: var(--warning-50); }
-
-.admin-controls {
-    display: flex;
-    align-items: center;
-}
+.quick-action-btn.primary:hover { border-color: var(--primary-300); background: var(--primary-50); color: var(--primary-700); }
+.quick-action-btn.success:hover { border-color: var(--success-300); background: var(--success-50); color: var(--success-700); }
+.quick-action-btn.info:hover { border-color: var(--info-300); background: var(--info-50); color: var(--info-700); }
+.quick-action-btn.warning:hover { border-color: var(--warning-300); background: var(--warning-50); color: var(--warning-700); }
 
 @media (max-width: 768px) {
-    .admin-controls {
-        justify-content: flex-start;
-        margin-top: 1rem;
-    }
-    
     .admin-grid {
         grid-template-columns: 1fr;
     }

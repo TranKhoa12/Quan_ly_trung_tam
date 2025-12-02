@@ -278,30 +278,30 @@ class Migration {
     }
     
     private function getExecutedMigrations() {
-        $this->db->query("SELECT migration_name FROM {$this->migrationTable} ORDER BY id");
-        $results = $this->db->resultSet();
+        $this->getDb()->query("SELECT migration_name FROM {$this->migrationTable} ORDER BY id");
+        $results = $this->getDb()->resultSet();
         
         return array_column($results, 'migration_name');
     }
     
     private function getNextBatch() {
-        $this->db->query("SELECT MAX(batch) as max_batch FROM {$this->migrationTable}");
-        $result = $this->db->single();
+        $this->getDb()->query("SELECT MAX(batch) as max_batch FROM {$this->migrationTable}");
+        $result = $this->getDb()->single();
         
         return ($result->max_batch ?? 0) + 1;
     }
     
     private function getLastBatch() {
-        $this->db->query("SELECT MAX(batch) as max_batch FROM {$this->migrationTable}");
-        $result = $this->db->single();
+        $this->getDb()->query("SELECT MAX(batch) as max_batch FROM {$this->migrationTable}");
+        $result = $this->getDb()->single();
         
         return $result->max_batch ?? null;
     }
     
     private function getBatchMigrations($batch) {
-        $this->db->query("SELECT migration_name FROM {$this->migrationTable} WHERE batch = :batch ORDER BY id");
-        $this->db->bind(':batch', $batch);
-        $results = $this->db->resultSet();
+        $this->getDb()->query("SELECT migration_name FROM {$this->migrationTable} WHERE batch = :batch ORDER BY id");
+        $this->getDb()->bind(':batch', $batch);
+        $results = $this->getDb()->resultSet();
         
         return array_column($results, 'migration_name');
     }
@@ -322,7 +322,7 @@ class Migration {
         }
         
         $migrationInstance = new $className();
-        $migrationInstance->up($this->db);
+        $migrationInstance->up($this->getDb());
     }
     
     private function rollbackMigration($migration) {
@@ -336,23 +336,26 @@ class Migration {
         
         $className = $this->toCamelCase($migration);
         $migrationInstance = new $className();
-        $migrationInstance->down($this->db);
+        $migrationInstance->down($this->getDb());
     }
     
     private function recordMigration($migration, $batch) {
-        $this->db->query("INSERT INTO {$this->migrationTable} (migration_name, batch) VALUES (:migration, :batch)");
-        $this->db->bind(':migration', $migration);
-        $this->db->bind(':batch', $batch);
-        $this->db->execute();
+        $this->getDb()->query("INSERT INTO {$this->migrationTable} (migration_name, batch) VALUES (:migration, :batch)");
+        $this->getDb()->bind(':migration', $migration);
+        $this->getDb()->bind(':batch', $batch);
+        $this->getDb()->execute();
     }
     
     private function removeMigrationRecord($migration) {
-        $this->db->query("DELETE FROM {$this->migrationTable} WHERE migration_name = :migration");
-        $this->db->bind(':migration', $migration);
-        $this->db->execute();
+        $this->getDb()->query("DELETE FROM {$this->migrationTable} WHERE migration_name = :migration");
+        $this->getDb()->bind(':migration', $migration);
+        $this->getDb()->execute();
     }
     
     private function toCamelCase($string) {
+        // Remove timestamp prefix (YYYY_MM_DD_HHMMSS_)
+        $string = preg_replace('/^\d{4}_\d{2}_\d{2}_\d{6}_/', '', $string);
+        
         $parts = explode('_', $string);
         $parts = array_map('ucfirst', $parts);
         return implode('', $parts);

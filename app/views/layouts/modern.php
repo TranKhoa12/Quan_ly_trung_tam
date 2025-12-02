@@ -55,6 +55,10 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         if (strpos($currentPath, '/revenue') !== false) return 'revenue';
         if (strpos($currentPath, '/certificates') !== false) return 'certificates';
         if (strpos($currentPath, '/completion-slips') !== false) return 'completion_slips';
+        if (strpos($currentPath, '/teaching-shifts/transfers') !== false) return 'teaching_shifts_transfers';
+        if (strpos($currentPath, '/teaching-shifts/payroll') !== false) return 'teaching_shifts_payroll';
+        if (strpos($currentPath, '/teaching-shifts/admin') !== false) return 'teaching_shifts_admin';
+        if (strpos($currentPath, '/teaching-shifts') !== false) return 'teaching_shifts';
         if (strpos($currentPath, '/staff') !== false) return 'staff';
         return 'dashboard';
     }
@@ -120,6 +124,12 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                             <span>Phiếu hoàn thành HV</span>
                         </a>
                     </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('teaching-shifts') ?>" class="nav-link <?= isActive('teaching_shifts') ?>">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            <span>Lịch dạy</span>
+                        </a>
+                    </div>
                 </div>
 
                 <?php if ($currentUser['role'] === 'admin'): ?>
@@ -141,6 +151,24 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         <a href="<?= $buildUrl('staff') ?>" class="nav-link <?= isActive('staff') ?>">
                             <i class="fas fa-users-cog"></i>
                             <span>Quản lý nhân viên</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('teaching-shifts/admin') ?>" class="nav-link <?= isActive('teaching_shifts_admin') ?>">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Quản lý lịch dạy</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('teaching-shifts/payroll') ?>" class="nav-link <?= isActive('teaching_shifts_payroll') ?>">
+                            <i class="fas fa-money-check-alt"></i>
+                            <span>Bảng lương lịch dạy</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('teaching-shifts/transfers/list') ?>" class="nav-link <?= isActive('teaching_shifts_transfers') ?>">
+                            <i class="fas fa-exchange-alt"></i>
+                            <span>Yêu cầu chuyển ca</span>
                         </a>
                     </div>
                 </div>

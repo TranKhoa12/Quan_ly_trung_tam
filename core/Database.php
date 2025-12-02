@@ -43,7 +43,24 @@ class Database {
         return $stmt->fetchAll();
     }
     
+    public function execute($sql, $params = []) {
+        $stmt = $this->connection->prepare($sql);
+        return $stmt->execute($params);
+    }
+    
     public function lastInsertId() {
         return $this->connection->lastInsertId();
+    }
+    
+    public function beginTransaction() {
+        return $this->connection->beginTransaction();
+    }
+    
+    public function commit() {
+        return $this->connection->commit();
+    }
+    
+    public function rollBack() {
+        return $this->connection->rollBack();
     }
 }

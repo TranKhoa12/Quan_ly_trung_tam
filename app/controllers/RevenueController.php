@@ -230,7 +230,7 @@ class RevenueController extends BaseController
                 }
             }
 
-            $revenueId = $this->revenueModel->create($data);
+            $this->revenueModel->create($data);
 
             $_SESSION['success'] = 'Tạo báo cáo doanh thu thành công!';
             $this->redirect('/Quan_ly_trung_tam/public/revenue');
