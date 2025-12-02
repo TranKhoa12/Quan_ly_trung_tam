@@ -809,6 +809,7 @@ class TeachingShiftController extends BaseController
         try {
             $staffIds = $_POST['staff_ids'] ?? [];
             $shiftIds = $_POST['shift_ids'] ?? [];
+            $customShifts = $_POST['custom_shifts'] ?? [];
             $dateMode = $_POST['date_mode'] ?? 'single';
             $notes = trim($_POST['notes'] ?? '');
             $autoApprove = isset($_POST['auto_approve']) && $_POST['auto_approve'] === '1';
@@ -818,8 +819,55 @@ class TeachingShiftController extends BaseController
                 throw new Exception('Vui lòng chọn ít nhất một nhân viên.');
             }
             
-            if (empty($shiftIds) || !is_array($shiftIds)) {
-                throw new Exception('Vui lòng chọn ít nhất một ca dạy.');
+            if (empty($shiftIds) && empty($customShifts)) {
+                throw new Exception('Vui lòng chọn ít nhất một ca dạy hoặc tạo ca tùy chỉnh.');
+            }
+            
+            // Prepare shifts array (combine preset and custom)
+            $allShifts = [];
+            
+            // Add preset shifts
+            if (!empty($shiftIds) && is_array($shiftIds)) {
+                foreach ($shiftIds as $shiftId) {
+                    $shift = $this->shiftModel->find($shiftId);
+                    if ($shift && (int)$shift['is_active'] === 1) {
+                        $allShifts[] = [
+                            'type' => 'preset',
+                            'shift_id' => $shiftId,
+                            'start' => $shift['start_time'],
+                            'end' => $shift['end_time'],
+                            'rate' => (float)$shift['hourly_rate']
+                        ];
+                    }
+                }
+            }
+            
+            // Add custom shifts
+            if (!empty($customShifts) && is_array($customShifts)) {
+                foreach ($customShifts as $customShift) {
+                    $parts = explode('|', $customShift);
+                    if (count($parts) === 2) {
+                        $start = $parts[0];
+                        $end = $parts[1];
+                        
+                        // Validate time format
+                        if (strtotime($end) <= strtotime($start)) {
+                            throw new Exception('Ca tùy chỉnh: Giờ kết thúc phải lớn hơn giờ bắt đầu.');
+                        }
+                        
+                        $allShifts[] = [
+                            'type' => 'custom',
+                            'shift_id' => null,
+                            'start' => $start,
+                            'end' => $end,
+                            'rate' => 50.00 // Default hourly rate for custom shifts
+                        ];
+                    }
+                }
+            }
+            
+            if (empty($allShifts)) {
+                throw new Exception('Không có ca dạy hợp lệ nào để tạo.');
             }
             
             // Get dates array
@@ -893,17 +941,10 @@ class TeachingShiftController extends BaseController
                     continue;
                 }
                 
-                foreach ($shiftIds as $shiftId) {
-                    // Get shift info
-                    $shift = $this->shiftModel->find($shiftId);
-                    if (!$shift || (int)$shift['is_active'] !== 1) {
-                        $errors[] = "Ca dạy ID $shiftId không tồn tại hoặc đã bị khóa";
-                        continue;
-                    }
-                    
-                    $shiftStart = $shift['start_time'];
-                    $shiftEnd = $shift['end_time'];
-                    $hourlyRate = (float)$shift['hourly_rate'];
+                foreach ($allShifts as $shiftInfo) {
+                    $shiftStart = $shiftInfo['start'];
+                    $shiftEnd = $shiftInfo['end'];
+                    $hourlyRate = $shiftInfo['rate'];
                     $hours = $this->calculateHours($shiftStart, $shiftEnd);
                     
                     foreach ($dates as $date) {
@@ -916,10 +957,10 @@ class TeachingShiftController extends BaseController
                         // Create registration
                         $data = [
                             'staff_id' => $staffId,
-                            'shift_id' => $shiftId,
+                            'shift_id' => $shiftInfo['shift_id'], // null for custom shifts
                             'shift_date' => $date,
-                            'custom_start' => null,
-                            'custom_end' => null,
+                            'custom_start' => $shiftInfo['type'] === 'custom' ? $shiftStart : null,
+                            'custom_end' => $shiftInfo['type'] === 'custom' ? $shiftEnd : null,
                             'hours' => $hours,
                             'hourly_rate' => $hourlyRate,
                             'notes' => $notes,

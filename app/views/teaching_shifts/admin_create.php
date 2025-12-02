@@ -672,8 +672,34 @@ select[size] option:hover {
                                         (<?= date('H:i', strtotime($shift['start_time'])) ?> - <?= date('H:i', strtotime($shift['end_time'])) ?>)
                                     </option>
                                 <?php endforeach; ?>
+                                <option value="custom" data-name="Ca tùy chỉnh">Ca tùy chỉnh (Nhập thời gian khác)</option>
                             </select>
                             <div id="selectedShiftsContainer" class="multi-select-container mt-2"></div>
+                        </div>
+
+                        <!-- Custom Time Fields for Multiple -->
+                        <div class="custom-shift-fields" id="multiCustomShiftFields">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Ca tùy chỉnh:</strong> Nhập thời gian bắt đầu và kết thúc cho ca dạy tùy chỉnh
+                            </div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">
+                                        <i class="fas fa-clock me-2"></i>Giờ bắt đầu
+                                    </label>
+                                    <input type="time" class="form-control" name="multi_custom_start" id="multiCustomStart">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">
+                                        <i class="fas fa-clock me-2"></i>Giờ kết thúc
+                                    </label>
+                                    <input type="time" class="form-control" name="multi_custom_end" id="multiCustomEnd">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary w-100" id="addCustomShiftBtn">
+                                <i class="fas fa-plus me-2"></i>Thêm ca tùy chỉnh
+                            </button>
                         </div>
 
                         <!-- Notes -->
@@ -934,6 +960,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!option.value) return;
             
             const shiftId = option.value;
+            
+            // Handle custom shift
+            if (shiftId === 'custom') {
+                const multiCustomFields = document.getElementById('multiCustomShiftFields');
+                if (multiCustomFields) {
+                    multiCustomFields.classList.add('show');
+                }
+                this.selectedIndex = 0;
+                return;
+            }
+            
             const shiftName = option.dataset.name;
             const start = option.dataset.start;
             const end = option.dataset.end;
@@ -952,14 +989,75 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Add custom shift button
+    const addCustomShiftBtn = document.getElementById('addCustomShiftBtn');
+    const multiCustomStart = document.getElementById('multiCustomStart');
+    const multiCustomEnd = document.getElementById('multiCustomEnd');
+    const multiCustomFields = document.getElementById('multiCustomShiftFields');
+
+    if (addCustomShiftBtn && multiCustomStart && multiCustomEnd) {
+        addCustomShiftBtn.addEventListener('click', function() {
+            const startTime = multiCustomStart.value;
+            const endTime = multiCustomEnd.value;
+
+            if (!startTime || !endTime) {
+                alert('Vui lòng nhập đầy đủ giờ bắt đầu và kết thúc!');
+                return;
+            }
+
+            const start = new Date(`2000-01-01 ${startTime}`);
+            const end = new Date(`2000-01-01 ${endTime}`);
+            
+            if (end <= start) {
+                alert('Giờ kết thúc phải lớn hơn giờ bắt đầu!');
+                return;
+            }
+
+            // Generate unique ID for custom shift
+            const customId = 'custom_' + Date.now();
+            const customName = `Ca tùy chỉnh (${startTime} - ${endTime})`;
+
+            if (!selectedShifts.find(s => s.start === startTime && s.end === endTime)) {
+                selectedShifts.push({
+                    id: customId,
+                    name: customName,
+                    start: startTime,
+                    end: endTime,
+                    isCustom: true
+                });
+                renderSelectedShifts();
+                updateMultiSummary();
+
+                // Reset custom fields
+                multiCustomStart.value = '';
+                multiCustomEnd.value = '';
+                multiCustomFields.classList.remove('show');
+            } else {
+                alert('Ca tùy chỉnh với thời gian này đã được thêm!');
+            }
+        });
+    }
+
     function renderSelectedShifts() {
-        selectedShiftsContainer.innerHTML = selectedShifts.map(shift => `
-            <div class="multi-select-badge">
-                <span>${shift.name}</span>
-                <span class="remove-badge" onclick="removeShift('${shift.id}')">&times;</span>
-                <input type="hidden" name="shift_ids[]" value="${shift.id}">
-            </div>
-        `).join('');
+        selectedShiftsContainer.innerHTML = selectedShifts.map(shift => {
+            if (shift.isCustom) {
+                return `
+                    <div class="multi-select-badge">
+                        <span>${shift.name}</span>
+                        <span class="remove-badge" onclick="removeShift('${shift.id}')">&times;</span>
+                        <input type="hidden" name="custom_shifts[]" value="${shift.start}|${shift.end}">
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="multi-select-badge">
+                        <span>${shift.name}</span>
+                        <span class="remove-badge" onclick="removeShift('${shift.id}')">&times;</span>
+                        <input type="hidden" name="shift_ids[]" value="${shift.id}">
+                    </div>
+                `;
+            }
+        }).join('');
     }
 
     window.removeShift = function(shiftId) {
