@@ -2,8 +2,10 @@
    COMPLETE MODERN DASHBOARD CSS
    ============================================ */
 
-:root {
-    /* Colors */
+:root,
+:root[data-theme="light"],
+:root[data-theme="dark"] {
+    /* Colors - always light theme */
     --primary: #667eea;
     --primary-dark: #764ba2;
     --success: #10b981;
@@ -11,7 +13,7 @@
     --danger: #ef4444;
     --info: #06b6d4;
     
-    /* Grays */
+    /* Grays - always light theme */
     --gray-50: #f9fafb;
     --gray-100: #f3f4f6;
     --gray-200: #e5e7eb;
@@ -322,42 +324,6 @@ body {
     align-items: center;
     justify-content: center;
     border: 2px solid white;
-}
-
-/* Theme Toggle */
-.theme-toggle-btn {
-    width: 40px;
-    height: 40px;
-    border: none;
-    background: var(--gray-100);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-}
-
-.theme-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    transition: var(--transition);
-}
-
-.dark-icon {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0);
-}
-
-[data-theme="dark"] .light-icon {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0);
-}
-
-[data-theme="dark"] .dark-icon {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
 }
 
 /* User Menu */

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
     <title><?= $title ?? 'Dashboard' ?> - Quản lý trung tâm</title>
     
     <!-- Preload fonts -->
@@ -227,13 +228,6 @@
                             <i class="fas fa-envelope"></i>
                             <span class="notification-badge">2</span>
                         </button>
-                        
-                        <!-- Theme Toggle -->
-                        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Chuyển đổi chế độ sáng/tối">
-                            <i class="fas fa-sun theme-icon light-icon"></i>
-                            <i class="fas fa-moon theme-icon dark-icon"></i>
-                        </button>
-                        
                         <button class="action-btn" onclick="showSettings()" title="Cài đặt">
                             <i class="fas fa-cog"></i>
                         </button>

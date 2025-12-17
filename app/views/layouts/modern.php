@@ -14,10 +14,11 @@ $buildUrl = function (string $path = '') use ($appBasePath): string {
 $appBasePathString = $appBasePath ? $appBasePath : '';
 ?>
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
     <title><?= $pageTitle ?? 'Dashboard' ?> - Quản lý trung tâm</title>
     
     <!-- Fonts -->
@@ -30,7 +31,6 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
     
     <!-- Modern Dashboard CSS -->
     <link href="<?= $buildUrl('assets/css/modern-dashboard.css') ?>" rel="stylesheet">
-    <link href="<?= $buildUrl('assets/css/dark-theme.css') ?>" rel="stylesheet">
     
     <!-- Bootstrap for utilities only -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -224,11 +224,6 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                             <i class="fas fa-envelope"></i>
                             <span class="notification-badge">2</span>
                         </button> -->
-                        <div class="theme-toggle" onclick="toggleTheme()" title="Chuyển đổi theme">
-                            <i class="fas fa-sun theme-toggle-icon sun-icon"></i>
-                            <i class="fas fa-moon theme-toggle-icon moon-icon"></i>
-                        </div>
-                        
                         <!-- <button class="header-btn" title="Cài đặt" onclick="showSettings()">
                             <i class="fas fa-cog"></i>
                         </button> -->
@@ -395,34 +390,8 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         });
     }
 
-    // Theme Management
-    function toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        
-        // Add transition class for smooth animation
-        document.body.classList.add('theme-transition');
-        setTimeout(() => {
-            document.body.classList.remove('theme-transition');
-        }, 300);
-    }
-
-    function initializeTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        const theme = savedTheme || systemTheme;
-        
-        document.documentElement.setAttribute('data-theme', theme);
-    }
-
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize theme
-        initializeTheme();
-        
         // Update clock every minute
         updateClock();
         setInterval(updateClock, 60000);
