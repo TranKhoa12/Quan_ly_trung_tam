@@ -110,4 +110,91 @@ class Report extends BaseModel
         return $stmt->rowCount() > 0;
     }
 
+    public function countReports($conditions = [])
+    {
+        $sql = "SELECT COUNT(*) as total FROM reports r";
+        $params = [];
+        
+        if (!empty($conditions)) {
+            $whereClause = [];
+            foreach ($conditions as $column => $value) {
+                if (strpos($column, '(') !== false) {
+                    $whereClause[] = "$column = ?";
+                } else {
+                    $whereClause[] = "r.$column = ?";
+                }
+                $params[] = $value;
+            }
+            $sql .= " WHERE " . implode(' AND ', $whereClause);
+        }
+        
+        $result = $this->db->fetch($sql, $params);
+        return $result['total'] ?? 0;
+    }
+
+    public function getReportsWithStaffPaginated($conditions = [], $offset = 0, $limit = 20, $orderBy = 'report_date DESC, report_time DESC')
+    {
+        $sql = "SELECT r.*, u.full_name as staff_name 
+                FROM reports r 
+                JOIN users u ON r.staff_id = u.id";
+        $params = [];
+        
+        if (!empty($conditions)) {
+            $whereClause = [];
+            foreach ($conditions as $column => $value) {
+                if (strpos($column, '(') !== false) {
+                    $whereClause[] = "$column = ?";
+                } else {
+                    $whereClause[] = "r.$column = ?";
+                }
+                $params[] = $value;
+            }
+            $sql .= " WHERE " . implode(' AND ', $whereClause);
+        }
+        
+        if ($orderBy) {
+            $sql .= " ORDER BY $orderBy";
+        }
+        
+        $sql .= " LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    public function getReportsByDateRangePaginated($startDate, $endDate, $staffId = null, $offset = 0, $limit = 20)
+    {
+        $sql = "SELECT r.*, u.full_name as staff_name 
+                FROM reports r 
+                JOIN users u ON r.staff_id = u.id 
+                WHERE r.report_date BETWEEN ? AND ?";
+        $params = [$startDate, $endDate];
+        
+        if ($staffId) {
+            $sql .= " AND r.staff_id = ?";
+            $params[] = $staffId;
+        }
+        
+        $sql .= " ORDER BY r.report_date DESC, r.report_time DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    public function countReportsByDateRange($startDate, $endDate, $staffId = null)
+    {
+        $sql = "SELECT COUNT(*) as total FROM reports r WHERE r.report_date BETWEEN ? AND ?";
+        $params = [$startDate, $endDate];
+        
+        if ($staffId) {
+            $sql .= " AND r.staff_id = ?";
+            $params[] = $staffId;
+        }
+        
+        $result = $this->db->fetch($sql, $params);
+        return $result['total'] ?? 0;
+    }
+
 }

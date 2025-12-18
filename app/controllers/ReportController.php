@@ -37,10 +37,17 @@ class ReportController extends BaseController
         try {
             $user = $this->getUser();
             
+            // Pagination settings
+            $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+            $perPage = 20;
+            $offset = ($page - 1) * $perPage;
+            
             // Phân quyền xem báo cáo
             if ($user['role'] === 'staff') {
-                // Nhân viên CHỈ thấy báo cáo của mình hôm nay
+                // Nhân viên CHỈ thấy báo cáo của mình hôm nay (không phân trang)
                 $reports = $this->reportModel->getTodayReportsByStaff($user['id']);
+                $totalRecords = count($reports);
+                $totalPages = 1;
                 $staff = []; // Không cần danh sách staff cho nhân viên
                 $title = 'Báo cáo của tôi hôm nay';
             } else {
@@ -50,21 +57,20 @@ class ReportController extends BaseController
                 $staffId = $_GET['staff_id'] ?? null;
                 
                 if ($fromDate && $toDate) {
-                    $reports = $this->reportModel->getReportsByDateRange($fromDate, $toDate);
-                    if ($staffId) {
-                        $reports = array_filter($reports, function($report) use ($staffId) {
-                            return $report['staff_id'] == $staffId;
-                        });
-                    }
+                    // Get with date range filter
+                    $totalRecords = $this->reportModel->countReportsByDateRange($fromDate, $toDate, $staffId);
+                    $reports = $this->reportModel->getReportsByDateRangePaginated($fromDate, $toDate, $staffId, $offset, $perPage);
                 } else {
-                    $reports = $this->reportModel->getReportsWithStaff();
+                    // Get all reports
+                    $conditions = [];
                     if ($staffId) {
-                        $reports = array_filter($reports, function($report) use ($staffId) {
-                            return $report['staff_id'] == $staffId;
-                        });
+                        $conditions['staff_id'] = $staffId;
                     }
+                    $totalRecords = $this->reportModel->countReports($conditions);
+                    $reports = $this->reportModel->getReportsWithStaffPaginated($conditions, $offset, $perPage);
                 }
                 
+                $totalPages = ceil($totalRecords / $perPage);
                 $staff = $this->userModel->getStaffList();
                 $title = 'Quản lý báo cáo học viên';
             }
@@ -74,7 +80,11 @@ class ReportController extends BaseController
                 'userRole' => $user['role'],
                 'staff' => $staff ?? [],
                 'title' => $title,
-                'user' => $user
+                'user' => $user,
+                'currentPage' => $page,
+                'totalPages' => $totalPages,
+                'totalRecords' => $totalRecords,
+                'perPage' => $perPage
             ]);
         } catch (Exception $e) {
             $this->view('reports/index', [
@@ -82,7 +92,11 @@ class ReportController extends BaseController
                 'error' => $e->getMessage(),
                 'userRole' => $this->getUser()['role'] ?? 'staff',
                 'staff' => [],
-                'title' => 'Báo cáo học viên'
+                'title' => 'Báo cáo học viên',
+                'currentPage' => 1,
+                'totalPages' => 0,
+                'totalRecords' => 0,
+                'perPage' => 20
             ]);
         }
     }
