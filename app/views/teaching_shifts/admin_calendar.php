@@ -72,16 +72,17 @@ ob_start();
     min-height: 800px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: auto;
+    grid-auto-rows: 200px;
     background: white;
-    flex: 1;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .calendar-day-header {
@@ -879,12 +880,29 @@ function renderCalendar() {
         calendarDaysContainer.appendChild(cell);
     }
     
-    // Next month's days to fill the grid (6 columns x rows, skip Sundays)
+    // Next month's days to fill the grid (6 columns x rows)
+    // Make sure we always have complete weeks (multiples of 6)
     const totalCells = calendarDaysContainer.children.length;
-    const remainingCells = Math.ceil(totalCells / 6) * 6 - totalCells;
-    for (let day = 1; day <= remainingCells; day++) {
-        const cell = createDayCell(day, true, null);
+    // Calculate how many more cells needed to complete rows of 6
+    const remainingCells = totalCells % 6 === 0 ? 0 : 6 - (totalCells % 6);
+    
+    // Add next month days (skip if they would be Sunday)
+    let nextMonthDay = 1;
+    for (let i = 0; i < remainingCells; i++) {
+        // Calculate what day of week this would be
+        const nextDate = new Date(year, month + 1, nextMonthDay);
+        const nextDayOfWeek = nextDate.getDay();
+        
+        // Skip if it's Sunday
+        if (nextDayOfWeek === 0) {
+            nextMonthDay++;
+            i--; // Don't count this iteration
+            continue;
+        }
+        
+        const cell = createDayCell(nextMonthDay, true, null);
         calendarDaysContainer.appendChild(cell);
+        nextMonthDay++;
     }
 }
 
