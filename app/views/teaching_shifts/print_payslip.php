@@ -206,19 +206,6 @@
             </tfoot>
         </table>
 
-        <!-- Total Amount -->
-        <div class="total-section">
-            <div class="text-center mb-2">
-                <strong>TỔNG TIỀN LƯƠNG</strong>
-            </div>
-            <div class="total-amount">
-                <?= number_format($totalAmount, 0, ',', '.') ?> ₫
-            </div>
-            <div class="text-center mt-2">
-                <small>(<?= ucfirst(convert_number_to_words($totalAmount)) ?> đồng)</small>
-            </div>
-        </div>
-
         <div class="text-center mt-4 text-muted">
             <small>--- HẾT ---</small>
         </div>
