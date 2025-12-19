@@ -145,6 +145,12 @@ class RevenueReport extends BaseModel
             } elseif ($column === 'DATE(payment_date)') {
                 $whereClause[] = "DATE(rr.payment_date) = ?";
                 $params[] = $value;
+            } elseif ($column === 'transfer_type_in' && is_array($value) && !empty($value)) {
+                $placeholders = implode(',', array_fill(0, count($value), '?'));
+                $whereClause[] = "rr.transfer_type IN ($placeholders)";
+                foreach ($value as $v) {
+                    $params[] = $v;
+                }
             } else {
                 $whereClause[] = "rr.$column = ?";
                 $params[] = $value;
@@ -191,6 +197,12 @@ class RevenueReport extends BaseModel
             } elseif ($column === 'DATE(payment_date)') {
                 $whereClause[] = "DATE(rr.payment_date) = ?";
                 $params[] = $value;
+            } elseif ($column === 'transfer_type_in' && is_array($value) && !empty($value)) {
+                $placeholders = implode(',', array_fill(0, count($value), '?'));
+                $whereClause[] = "rr.transfer_type IN ($placeholders)";
+                foreach ($value as $v) {
+                    $params[] = $v;
+                }
             } else {
                 $whereClause[] = "rr.$column = ?";
                 $params[] = $value;

@@ -339,6 +339,70 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         alert('Thông báo: Bạn có 3 thông báo mới!');
     }
 
+    // Transfer Type Multi-Select Dropdown
+    function toggleTransferDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('transferTypeDropdown');
+        const btn = document.getElementById('transferTypeBtn');
+        
+        if (!dropdown) return;
+        
+        const isOpen = dropdown.classList.contains('show');
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-menu-custom.show').forEach(d => {
+            if (d !== dropdown) d.classList.remove('show');
+        });
+        
+        if (isOpen) {
+            dropdown.classList.remove('show');
+            btn.classList.remove('active');
+        } else {
+            dropdown.classList.add('show');
+            btn.classList.add('active');
+        }
+    }
+
+    function updateTransferLabel() {
+        const checkboxes = document.querySelectorAll('#transferTypeDropdown input[type="checkbox"]:checked');
+        const label = document.getElementById('transferTypeLabel');
+        
+        if (!label) return;
+        
+        if (checkboxes.length === 0) {
+            label.textContent = 'Tất cả hình thức';
+        } else if (checkboxes.length === 1) {
+            label.textContent = checkboxes[0].nextElementSibling.textContent;
+        } else {
+            label.textContent = checkboxes.length + ' hình thức';
+        }
+    }
+
+    function clearTransferSelection() {
+        const checkboxes = document.querySelectorAll('#transferTypeDropdown input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+        updateTransferLabel();
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.custom-multi-select')) {
+            document.querySelectorAll('.dropdown-menu-custom.show').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+            document.querySelectorAll('.dropdown-toggle-custom.active').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
+    });
+
+    // Initialize transfer label on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof updateTransferLabel === 'function') {
+            updateTransferLabel();
+        }
+    });
+
     const toastContainer = document.getElementById('globalToastContainer');
 
     window.showToast = function(message, type = 'success') {

@@ -119,13 +119,35 @@ ob_start();
                         <label class="form-label">
                             <i class="fas fa-exchange-alt text-primary"></i> Hình thức
                         </label>
-                        <select class="form-select" name="transfer_type">
-                            <option value="">Tất cả hình thức</option>
-                            <option value="cash" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'cash') ? 'selected' : '' ?>>Tiền mặt</option>
-                            <option value="account_co_nhi" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'account_co_nhi') ? 'selected' : '' ?>>TK Cô Nhi</option>
-                            <option value="account_thay_hien" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'account_thay_hien') ? 'selected' : '' ?>>TK Thầy Hiến</option>
-                            <option value="account_company" <?= (isset($_GET['transfer_type']) && $_GET['transfer_type'] === 'account_company') ? 'selected' : '' ?>>TK Công ty</option>
-                        </select>
+                        <div class="custom-multi-select">
+                            <button type="button" class="form-control text-start dropdown-toggle-custom" id="transferTypeBtn" onclick="toggleTransferDropdown(event)">
+                                <span id="transferTypeLabel">Tất cả hình thức</span>
+                                <i class="fas fa-chevron-down float-end mt-1"></i>
+                            </button>
+                            <div class="dropdown-menu-custom" id="transferTypeDropdown">
+                                <?php
+                                $selectedTypes = isset($_GET['transfer_type']) ? (is_array($_GET['transfer_type']) ? $_GET['transfer_type'] : [$_GET['transfer_type']]) : [];
+                                $transferOptions = [
+                                    'cash' => 'Tiền mặt',
+                                    'account_co_nhi' => 'TK Cô Nhi',
+                                    'account_thay_hien' => 'TK Thầy Hiến',
+                                    'account_company' => 'TK Công ty'
+                                ];
+                                foreach ($transferOptions as $value => $label):
+                                ?>
+                                <label class="dropdown-item-custom">
+                                    <input type="checkbox" name="transfer_type[]" value="<?= $value ?>" 
+                                           <?= in_array($value, $selectedTypes) ? 'checked' : '' ?>
+                                           onchange="updateTransferLabel()">
+                                    <span><?= $label ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                                <div class="dropdown-divider"></div>
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none w-100" onclick="clearTransferSelection()">
+                                    <i class="fas fa-times-circle me-1"></i>Xóa tất cả
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">

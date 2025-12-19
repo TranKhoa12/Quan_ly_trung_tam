@@ -542,6 +542,131 @@ body {
   color: #dc2626;
 }
 
+/* Custom Multi-Select Dropdown */
+.custom-multi-select {
+  position: relative;
+}
+
+.dropdown-toggle-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1px solid #ced4da;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0.5rem 0.75rem;
+  font-size: 14px;
+}
+
+.dropdown-toggle-custom:hover {
+  border-color: #86b7fe;
+}
+
+.dropdown-toggle-custom.active {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.dropdown-toggle-custom i {
+  color: #6c757d;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-toggle-custom.active i {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu-custom {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+  z-index: 1000;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.dropdown-menu-custom.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item-custom {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin: 0;
+  user-select: none;
+}
+
+.dropdown-item-custom:hover {
+  background: #f8f9fa;
+}
+
+.dropdown-item-custom input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  cursor: pointer;
+  accent-color: #0d6efd;
+}
+
+.dropdown-item-custom span {
+  flex: 1;
+  font-size: 14px;
+  color: #212529;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: 4px 0;
+}
+
+.dropdown-menu-custom .btn-link {
+  font-size: 13px;
+  color: #6c757d;
+  padding: 8px;
+  text-align: center;
+}
+
+.dropdown-menu-custom .btn-link:hover {
+  color: #dc3545;
+  background: #f8f9fa;
+}
+
+/* Scrollbar for dropdown */
+.dropdown-menu-custom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dropdown-menu-custom::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.dropdown-menu-custom::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
 @media (max-width: 576px) {
   .user-menu-btn .user-name {
     display: none !important;

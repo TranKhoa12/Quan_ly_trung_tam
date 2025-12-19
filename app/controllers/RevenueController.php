@@ -43,9 +43,13 @@ class RevenueController extends BaseController
                 }
             }
             
-            // Transfer type filter
+            // Transfer type filter (support multiple)
             if (!empty($_GET['transfer_type'])) {
-                $conditions['transfer_type'] = $_GET['transfer_type'];
+                if (is_array($_GET['transfer_type'])) {
+                    $conditions['transfer_type_in'] = $_GET['transfer_type'];
+                } else {
+                    $conditions['transfer_type'] = $_GET['transfer_type'];
+                }
             }
             
             // Payment content filter
