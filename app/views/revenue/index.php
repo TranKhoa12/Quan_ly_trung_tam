@@ -11,9 +11,14 @@ ob_start();
 <?= pageHeader(
     'Báo cáo doanh thu', 
     'Theo dõi và quản lý doanh thu từ học phí và các khoản thu khác', 
-    '<a href="/Quan_ly_trung_tam/public/revenue/create" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Thêm doanh thu mới
-    </a>'
+    '<div class="btn-group">
+        <a href="/Quan_ly_trung_tam/public/transfer-batch" class="btn btn-success">
+            <i class="fas fa-money-check-alt me-2"></i>Quản lý đợt chuyển tiền
+        </a>
+        <a href="/Quan_ly_trung_tam/public/revenue/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm doanh thu mới
+        </a>
+    </div>'
 ) ?>
 
 <div class="p-3">

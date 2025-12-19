@@ -68,6 +68,19 @@ $router->get('/revenue/check-receipt-code', 'Revenue@checkReceiptCode');
 $router->post('/revenue/processOCR', 'Revenue@processOCR');
 $router->get('/revenue/{id}', 'Revenue@show');
 
+// Transfer Batch routes (Quản lý đợt chuyển tiền)
+$router->get('/transfer-batch', 'TransferBatch@index');
+
+// Transfer Batch routes
+$router->get('/transfer-batch', 'TransferBatch@index');
+$router->get('/transfer-batch/create', 'TransferBatch@create');
+$router->post('/transfer-batch/store', 'TransferBatch@store');
+$router->get('/transfer-batch/show/{id}', 'TransferBatch@show');
+$router->get('/transfer-batch/edit/{id}', 'TransferBatch@edit');
+$router->post('/transfer-batch/update/{id}', 'TransferBatch@update');
+$router->get('/transfer-batch/delete/{id}', 'TransferBatch@delete');
+$router->post('/transfer-batch/recalculate', 'TransferBatch@recalculate');
+
 // Students routes
 $router->get('/students', 'Student@index');
 $router->get('/students/create', 'Student@create');
