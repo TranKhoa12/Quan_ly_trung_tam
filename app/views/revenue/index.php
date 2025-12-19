@@ -8,17 +8,24 @@ $revenue_reports = $revenue_reports ?? [];
 ob_start();
 ?>
 
+<?php
+$headerButtons = '<div class="btn-group">';
+// Chỉ admin mới thấy nút Quản lý đợt chuyển tiền
+if ($userRole === 'admin') {
+    $headerButtons .= '<a href="/Quan_ly_trung_tam/public/transfer-batch" class="btn btn-success">
+            <i class="fas fa-money-check-alt me-2"></i>Quản lý đợt chuyển tiền
+        </a>';
+}
+$headerButtons .= '<a href="/Quan_ly_trung_tam/public/revenue/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm doanh thu mới
+        </a>
+    </div>';
+?>
+
 <?= pageHeader(
     'Báo cáo doanh thu', 
     'Theo dõi và quản lý doanh thu từ học phí và các khoản thu khác', 
-    '<div class="btn-group">
-        <a href="/Quan_ly_trung_tam/public/transfer-batch" class="btn btn-success">
-            <i class="fas fa-money-check-alt me-2"></i>Quản lý đợt chuyển tiền
-        </a>
-        <a href="/Quan_ly_trung_tam/public/revenue/create" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Thêm doanh thu mới
-        </a>
-    </div>'
+    $headerButtons
 ) ?>
 
 <div class="p-3">
