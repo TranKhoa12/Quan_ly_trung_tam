@@ -177,14 +177,14 @@
                     $end = strtotime($endTime);
                     $hours = ($end - $start) / 3600;
                     
-                    $hourlyRate = (float)($shift['hourly_rate'] ?? 50000);
+                    $hourlyRate = (float)($shift['hourly_rate'] ?? 50) * 1000;
                     $amount = $hours * $hourlyRate;
                     $totalAmount += $amount;
                 ?>
                 <tr>
                     <td class="text-center"><?= $index++ ?></td>
                     <td><?= date('d/m/Y', strtotime($shift['shift_date'])) ?></td>
-                    <td><?= htmlspecialchars($shift['shift_name'] ?? 'N/A') ?></td>
+                    <td><?= htmlspecialchars($shift['shift_name'] ?? 'Ca tự do') ?></td>
                     <td><?= date('H:i', $start) ?> - <?= date('H:i', $end) ?></td>
                     <td class="text-end"><?= number_format($hourlyRate, 0, ',', '.') ?></td>
                     <td class="text-end"><?= number_format($hours, 1) ?>h</td>
@@ -201,7 +201,7 @@
                 <tr class="fw-bold">
                     <td colspan="5" class="text-end">TỔNG CỘNG:</td>
                     <td class="text-end"><?= number_format($payroll['total_hours'], 1) ?>h</td>
-                    <td class="text-end"><?= number_format($payroll['total_amount'], 0, ',', '.') ?> ₫</td>
+                    <td class="text-end"><?= number_format($totalAmount, 0, ',', '.') ?> ₫</td>
                 </tr>
             </tfoot>
         </table>
@@ -212,26 +212,10 @@
                 <strong>TỔNG TIỀN LƯƠNG</strong>
             </div>
             <div class="total-amount">
-                <?= number_format($payroll['total_amount'], 0, ',', '.') ?> ₫
+                <?= number_format($totalAmount, 0, ',', '.') ?> ₫
             </div>
             <div class="text-center mt-2">
-                <small>(<?= ucfirst(convert_number_to_words($payroll['total_amount'])) ?> đồng)</small>
-            </div>
-        </div>
-
-        <!-- Signatures -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <strong>Người nhận</strong>
-                <div class="signature-line">
-                    <?= htmlspecialchars($staff['full_name']) ?>
-                </div>
-            </div>
-            <div class="signature-box">
-                <strong>Người phê duyệt</strong>
-                <div class="signature-line">
-                    Ban Giám Hiệu
-                </div>
+                <small>(<?= ucfirst(convert_number_to_words($totalAmount)) ?> đồng)</small>
             </div>
         </div>
 

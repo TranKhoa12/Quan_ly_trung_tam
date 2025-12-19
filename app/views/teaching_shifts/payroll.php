@@ -29,41 +29,42 @@ ob_start();
 <style>
 /* Custom styles for payroll page */
 .filter-section-payroll {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: white;
     padding: 1.5rem;
-    border-radius: 12px;
+    border-radius: 8px;
     margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .filter-section-payroll .form-label {
-    color: white;
+    color: #495057;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .filter-section-payroll .form-control {
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #dee2e6;
+    background: white;
     padding: 0.75rem 1rem;
 }
 
 .filter-section-payroll .btn-primary {
-    background: white;
-    color: #667eea;
+    background: #0d6efd;
+    color: white;
     border: none;
     padding: 0.75rem 2rem;
     font-weight: 600;
 }
 
 .filter-section-payroll .btn-primary:hover {
-    background: #f8f9fa;
+    background: #0b5ed7;
 }
 
 .period-info-banner {
-    background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+    background: #f8f9fa;
     padding: 1.25rem;
     border-radius: 8px;
-    border-left: 4px solid #0ea5e9;
+    border-left: 4px solid #0d6efd;
     margin-bottom: 1.5rem;
 }
 
@@ -71,7 +72,7 @@ ob_start();
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #0d6efd;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -146,7 +147,7 @@ ob_start();
 
 .month-year-header {
     padding: 12px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #0d6efd;
     color: white;
     font-weight: 600;
     display: flex;
@@ -198,9 +199,9 @@ ob_start();
 }
 
 .month-item.selected {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #0d6efd;
     color: white;
-    border-color: #667eea;
+    border-color: #0d6efd;
 }
 
 .month-item.current {
@@ -264,7 +265,7 @@ ob_start();
                 <?= statsCard('fas fa-clock', 'Tổng giờ dạy', number_format($totalHoursSum, 1) . 'h', 'Tổng số giờ', 'info') ?>
             </div>
             <div class="col-xl-3 col-md-6">
-                <?= statsCard('fas fa-money-bill-wave', 'Tổng chi phí', number_format($totalAmountSum / 1000000, 2) . 'M', 'Triệu đồng', 'success') ?>
+                <?= statsCard('fas fa-money-bill-wave', 'Tổng chi phí', number_format($totalAmountSum, 0, ',', '.') . ' đ', 'Đồng Việt Nam', 'success') ?>
             </div>
         </div>
     <?php endif; ?>

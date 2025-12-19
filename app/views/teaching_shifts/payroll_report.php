@@ -113,7 +113,7 @@ ob_start();
                     <?php
                     $totalAllMonths = array_sum(array_column($statistics, 'total_amount'));
                     ?>
-                    <span class="stat-value"><?= number_format($totalAllMonths / 1000000, 1) ?>M</span>
+                    <span class="stat-value"><?= number_format($totalAllMonths, 0, ',', '.') ?> đ</span>
                     <div class="stat-label">Tổng chi trả (12 tháng)</div>
                 </div>
             </div>
@@ -122,7 +122,7 @@ ob_start();
                     <?php
                     $avgMonthly = count($statistics) > 0 ? $totalAllMonths / count($statistics) : 0;
                     ?>
-                    <span class="stat-value"><?= number_format($avgMonthly / 1000000, 1) ?>M</span>
+                    <span class="stat-value"><?= number_format($avgMonthly, 0, ',', '.') ?> đ</span>
                     <div class="stat-label">Trung bình mỗi tháng</div>
                 </div>
             </div>

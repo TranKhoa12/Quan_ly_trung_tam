@@ -104,7 +104,7 @@ class ShiftRegistration extends BaseModel
     {
         $sql = "SELECT sr.staff_id, u.full_name, COUNT(*) AS total_shifts,
                    SUM(sr.hours) AS total_hours,
-                   SUM(sr.hours * COALESCE(ts.hourly_rate, 50)) AS total_amount
+                   SUM(sr.hours * COALESCE(ts.hourly_rate, 50) * 1000) AS total_amount
                 FROM {$this->table} sr
                 LEFT JOIN teaching_shifts ts ON sr.shift_id = ts.id
                 LEFT JOIN users u ON sr.staff_id = u.id
