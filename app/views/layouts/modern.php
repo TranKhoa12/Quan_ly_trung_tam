@@ -30,7 +30,7 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     
     <!-- Modern Dashboard CSS -->
-    <link href="<?= $buildUrl('assets/css/modern-dashboard.css') ?>" rel="stylesheet">
+    <link href="<?= $buildUrl('assets/css/modern-dashboard.css') ?>?v=<?= time() ?>" rel="stylesheet">
     
     <!-- Bootstrap for utilities only -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -215,27 +215,51 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         <input type="text" class="search-input" placeholder="Tìm kiếm...">
                     </div> -->
                     
-                    <div class="header-actions">
-                        <button class="header-btn" title="Thông báo" onclick="showNotifications()">
-                            <i class="fas fa-bell"></i>
-                            <span class="notification-badge">3</span>
+                    <div class="user-menu-wrapper">
+                        <button type="button" class="user-menu-btn" id="userMenuBtn" onclick="toggleUserMenu(event)">
+                            <div class="user-avatar"><?= getUserInitials($currentUser['full_name']) ?></div>
+                            <span class="user-name d-none d-sm-inline"><?= htmlspecialchars($currentUser['full_name']) ?></span>
+                            <i class="fas fa-chevron-down ms-1" style="font-size: 12px;"></i>
                         </button>
-                        <!-- <button class="header-btn" title="Tin nhắn" onclick="showMessages()">
-                            <i class="fas fa-envelope"></i>
-                            <span class="notification-badge">2</span>
-                        </button> -->
-                        <!-- <button class="header-btn" title="Cài đặt" onclick="showSettings()">
-                            <i class="fas fa-cog"></i>
-                        </button> -->
-                    </div>
-                    
-                    <div class="user-menu" onclick="toggleUserMenu()">
-                        <div class="user-avatar"><?= getUserInitials($currentUser['full_name']) ?></div>
-                        <div class="user-info d-none d-sm-block">
-                            <div class="user-name"><?= htmlspecialchars($currentUser['full_name']) ?></div>
-                            <div class="user-role"><?= $currentUser['role'] === 'admin' ? 'Quản trị viên' : 'Nhân viên' ?></div>
+
+                        <!-- Dropdown Menu -->
+                        <div class="user-dropdown-menu" id="userDropdownMenu">
+                            <!-- User Info Header -->
+                            <div class="dropdown-user-header">
+                                <div class="dropdown-avatar"><?= getUserInitials($currentUser['full_name']) ?></div>
+                                <div class="dropdown-user-details">
+                                    <div class="dropdown-username"><?= htmlspecialchars($currentUser['full_name']) ?></div>
+                                    <div class="dropdown-userrole"><?= $currentUser['role'] === 'admin' ? 'Quản trị viên' : 'Nhân viên' ?></div>
+                                </div>
+                            </div>
+
+                            <div class="dropdown-divider"></div>
+
+                            <!-- Menu Items -->
+                            <a href="<?= $buildUrl('profile') ?>" class="dropdown-menu-item">
+                                <i class="fas fa-user-circle"></i>
+                                <span>Thông tin cá nhân</span>
+                            </a>
+                            
+                            <a href="<?= $buildUrl('dashboard') ?>" class="dropdown-menu-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Bảng điều khiển</span>
+                            </a>
+
+                            <?php if ($currentUser['role'] === 'admin'): ?>
+                            <a href="<?= $buildUrl('staff') ?>" class="dropdown-menu-item">
+                                <i class="fas fa-users-cog"></i>
+                                <span>Quản lý nhân viên</span>
+                            </a>
+                            <?php endif; ?>
+
+                            <div class="dropdown-divider"></div>
+
+                            <a href="<?= $buildUrl('logout') ?>" class="dropdown-menu-item text-danger" onclick="return confirm('Bạn có chắc muốn đăng xuất?')">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Đăng xuất</span>
+                            </a>
                         </div>
-                        <i class="fas fa-chevron-down ms-2" style="color: var(--gray-400);"></i>
                     </div>
                 </div>
             </header>
@@ -279,10 +303,36 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
     }
 
     // Header Functions
-    function toggleUserMenu() {
-        // User menu dropdown functionality
-        console.log('Toggle user menu');
+    function toggleUserMenu(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('userDropdownMenu');
+        const btn = document.getElementById('userMenuBtn');
+        
+        if (!dropdown) return;
+        
+        const isOpen = dropdown.classList.contains('show');
+        
+        if (isOpen) {
+            dropdown.classList.remove('show');
+            btn.classList.remove('active');
+        } else {
+            dropdown.classList.add('show');
+            btn.classList.add('active');
+        }
     }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdownMenu');
+        const btn = document.getElementById('userMenuBtn');
+        
+        if (!dropdown || !btn) return;
+        
+        if (!event.target.closest('.user-menu-wrapper')) {
+            dropdown.classList.remove('show');
+            btn.classList.remove('active');
+        }
+    });
 
     function showNotifications() {
         // Show notifications
