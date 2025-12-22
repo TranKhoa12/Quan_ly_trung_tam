@@ -1,0 +1,26 @@
+# Google Credentials (SENSITIVE)
+config/google-credentials.json
+
+# Vendor
+vendor/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Uploads (if sensitive)
+# public/uploads/
+
+# Environment
+.env

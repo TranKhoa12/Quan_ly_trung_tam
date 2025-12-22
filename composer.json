@@ -4,6 +4,7 @@
         "thiagoalessio/tesseract_ocr": "^2.13",
         "setasign/fpdi": "^2.6",
         "setasign/fpdf": "^1.8",
-        "tecnickcom/tcpdf": "^6.10"
+        "tecnickcom/tcpdf": "^6.10",
+        "google/apiclient": "2.15"
     }
 }

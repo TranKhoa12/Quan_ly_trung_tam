@@ -6,6 +6,9 @@ define('APP_PATH', BASE_PATH . '/app');
 define('CONFIG_PATH', BASE_PATH . '/config');
 define('CORE_PATH', BASE_PATH . '/core');
 
+// Load Composer autoload
+require_once BASE_PATH . '/vendor/autoload.php';
+
 // Autoload function
 spl_autoload_register(function ($className) {
     $directories = [
@@ -70,9 +73,7 @@ $router->get('/revenue/{id}', 'Revenue@show');
 
 // Transfer Batch routes (Quản lý đợt chuyển tiền)
 $router->get('/transfer-batch', 'TransferBatch@index');
-
-// Transfer Batch routes
-$router->get('/transfer-batch', 'TransferBatch@index');
+$router->post('/transfer-batch/push-to-sheet', 'TransferBatch@pushToGoogleSheet');
 $router->get('/transfer-batch/create', 'TransferBatch@create');
 $router->post('/transfer-batch/store', 'TransferBatch@store');
 $router->get('/transfer-batch/show/{id}', 'TransferBatch@show');

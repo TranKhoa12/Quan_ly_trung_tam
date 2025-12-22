@@ -21,37 +21,44 @@ ob_start();
     <!-- Filter Date Range -->
     <div class="stats-card mb-4">
         <div class="card-body">
-            <form method="GET" action="/Quan_ly_trung_tam/public/transfer-batch" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label for="from_date" class="form-label fw-bold">
-                        <i class="fas fa-calendar-alt me-1"></i>Từ ngày
-                    </label>
-                    <input type="date" 
-                           class="form-control form-control-lg" 
-                           id="from_date" 
-                           name="from_date" 
-                           value="<?= htmlspecialchars($dateFrom) ?>">
-                </div>
-                <div class="col-md-3">
-                    <label for="to_date" class="form-label fw-bold">
-                        <i class="fas fa-calendar-alt me-1"></i>Đến ngày
-                    </label>
-                    <input type="date" 
-                           class="form-control form-control-lg" 
-                           id="to_date" 
-                           name="to_date" 
-                           value="<?= htmlspecialchars($dateTo) ?>">
-                </div>
-                <div class="col-md-6">
-                    <button type="submit" class="btn btn-primary btn-lg me-2">
-                        <i class="fas fa-search me-2"></i>Xem báo cáo
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-lg me-2" onclick="setThisWeek()">
-                        Tuần này
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="setThisMonth()">
-                        Tháng này
-                    </button>
+            <form method="GET" action="/Quan_ly_trung_tam/public/transfer-batch">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="from_date" class="form-label fw-bold">
+                            <i class="fas fa-calendar-alt me-1"></i>Từ ngày
+                        </label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="from_date" 
+                               name="from_date" 
+                               value="<?= htmlspecialchars($dateFrom) ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="to_date" class="form-label fw-bold">
+                            <i class="fas fa-calendar-alt me-1"></i>Đến ngày
+                        </label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="to_date" 
+                               name="to_date" 
+                               value="<?= htmlspecialchars($dateTo) ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Xem báo cáo
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="setThisWeek()">
+                                Tuần này
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="setThisMonth()">
+                                Tháng này
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="pushToSheet()" id="pushSheetBtn">
+                                <i class="fas fa-cloud-upload-alt me-1"></i>Đưa vào Sheet
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -142,6 +149,23 @@ ob_start();
             <span class="ms-2">|</span>
             <span class="ms-2">Chi nhánh CK cho Th Hiến = Cô Nhi + Tiền mặt</span>
         </small>
+    </div>
+
+    <!-- Google Sheet Embed -->
+    <div class="stats-card mt-4">
+        <div class="card-body">
+            <h5 class="mb-3">
+                <i class="fas fa-table me-2"></i>Bảng dữ liệu chi tiết
+            </h5>
+            <div class="ratio" style="--bs-aspect-ratio: 56.25%;">
+                <iframe 
+                    src="https://docs.google.com/spreadsheets/d/17ATz02rJKSfV5rBrQGoei-W9nTCr0-hmYZzCQ1zuzD4/edit?usp=sharing&widget=true&headers=false"
+                    frameborder="0"
+                    allowfullscreen="true"
+                    style="border: 1px solid #ddd; border-radius: 8px;">
+                </iframe>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -320,6 +344,68 @@ function downloadQR() {
 function formatMoney(amount) {
     return new Intl.NumberFormat('vi-VN').format(amount);
 }
+
+// Push data to Google Sheet
+function pushToSheet() {
+    const fromDate = document.getElementById('from_date').value;
+    const toDate = document.getElementById('to_date').value;
+    
+    if (!fromDate || !toDate) {
+        alert('Vui lòng chọn khoảng thời gian trước!');
+        return;
+    }
+    
+    // Confirm
+    if (!confirm(`Bạn có chắc muốn đưa dữ liệu từ ${fromDate} đến ${toDate} vào Google Sheet?`)) {
+        return;
+    }
+    
+    const btn = document.getElementById('pushSheetBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý...';
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('from_date', fromDate);
+    formData.append('to_date', toDate);
+    
+    // Send request
+    fetch('/Quan_ly_trung_tam/public/transfer-batch/push-to-sheet', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let message = '✅ ' + data.message;
+            if (data.debug) {
+                message += '\n\n📍 Thông tin chi tiết:';
+                message += '\n• Sheet: ' + data.debug.sheetName;
+                message += '\n• Dòng: ' + data.debug.row;
+                message += '\n• Range: ' + data.debug.range;
+                message += '\n• Số ô đã ghi: ' + data.debug.updatedCells;
+            }
+            alert(message);
+            
+            // Reload iframe to show updated data
+            const iframe = document.querySelector('.stats-card iframe');
+            if (iframe) {
+                iframe.src = iframe.src;
+            }
+        } else {
+            alert('❌ ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi đưa dữ liệu vào Sheet: ' + error.message);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
 </script>
 
 <style>
@@ -338,6 +424,7 @@ function formatMoney(amount) {
     font-weight: 600;
     padding: 12px 8px;
     border: 1px solid #dee2e6;
+    font-size: 14px;
 }
 
 .table tbody td {
@@ -350,12 +437,33 @@ function formatMoney(amount) {
     border: 1px solid #dee2e6;
 }
 
-.form-control-lg {
-    height: 46px;
+.form-control {
+    height: 38px;
+    font-size: 14px;
 }
 
-.btn-lg {
-    padding: 12px 24px;
+.btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn i {
+    font-size: 13px;
+}
+
+.gap-2 {
+    gap: 0.5rem !important;
+}
+
+@media (max-width: 768px) {
+    .d-flex.flex-wrap {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
 }
 </style>
 
