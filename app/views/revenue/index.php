@@ -236,6 +236,9 @@ $headerButtons .= '<a href="/Quan_ly_trung_tam/public/revenue/create" class="btn
                                 <th>Mã biên lai</th>
                                 <th>Nhân viên</th>
                                 <th>Hình ảnh</th>
+                                <?php if ($userRole === 'admin'): ?>
+                                <th class="text-end">Hành động</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -267,11 +270,13 @@ $headerButtons .= '<a href="/Quan_ly_trung_tam/public/revenue/create" class="btn
                                             $courseName = $report['course_name'];
                                             $displayName = strlen($courseName) > 30 ? substr($courseName, 0, 27) . '...' : $courseName;
                                             ?>
-                                            <span class="badge bg-info" 
-                                                  title="<?= htmlspecialchars($courseName) ?>"
-                                                  style="cursor: help; max-width: 200px; white-space: normal; text-align: left;">
+                                            <button type="button" 
+                                                    class="badge bg-info border-0" 
+                                                    data-fullname="<?= htmlspecialchars($courseName) ?>"
+                                                    onclick="showCourseName(this.dataset.fullname)"
+                                                    style="cursor: pointer; max-width: 220px; white-space: normal; text-align: left;">
                                                 <?= htmlspecialchars($displayName) ?>
-                                            </span>
+                                            </button>
                                         <?php else: ?>
                                             <span class="text-muted">Chưa có</span>
                                         <?php endif; ?>
@@ -376,6 +381,18 @@ $headerButtons .= '<a href="/Quan_ly_trung_tam/public/revenue/create" class="btn
                                             <span class="text-muted">Không có</span>
                                         <?php endif; ?>
                                     </td>
+                                    <?php if ($userRole === 'admin'): ?>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex align-items-center justify-content-end gap-2" style="white-space: nowrap;">
+                                            <a href="/Quan_ly_trung_tam/public/revenue/<?= $report['id'] ?>/edit" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa" onclick="deleteRevenue(<?= $report['id'] ?>)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -537,6 +554,24 @@ $headerButtons .= '<a href="/Quan_ly_trung_tam/public/revenue/create" class="btn
     </div>
 </div>
 
+<!-- Course Name Modal -->
+<div class="modal fade" id="courseNameModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-book-open text-primary me-2"></i>Tên khóa học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="courseNameFull" class="fs-6"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Đóng</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
 <script>
 let currentImages = [];
 let currentImageIndex = 0;
@@ -663,6 +698,15 @@ document.addEventListener('keydown', function(e) {
 // Legacy function for single image (backward compatibility)
 function showImageModal(imagePath) {
     showMultipleImages([imagePath]);
+}
+
+function showCourseName(fullName) {
+    const nameEl = document.getElementById('courseNameFull');
+    if (nameEl) {
+        nameEl.textContent = fullName;
+    }
+    const modal = new bootstrap.Modal(document.getElementById('courseNameModal'));
+    modal.show();
 }
 
 function deleteRevenue(revenueId) {

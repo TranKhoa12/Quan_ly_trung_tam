@@ -70,6 +70,13 @@ $router->post('/revenue/delete-multiple', 'Revenue@deleteMultiple');
 $router->get('/revenue/check-receipt-code', 'Revenue@checkReceiptCode');
 $router->post('/revenue/processOCR', 'Revenue@processOCR');
 $router->get('/revenue/{id}', 'Revenue@show');
+// Admin edit/update revenue
+$router->get('/revenue/{id}/edit', 'Revenue@edit');
+$router->post('/revenue/{id}/update', 'Revenue@update');
+// Delete single confirmation image (Admin)
+$router->post('/revenue/{id}/image/delete', 'Revenue@deleteImage');
+// Delete single revenue (Admin)
+$router->post('/revenue/{id}/delete', 'Revenue@delete');
 
 // Transfer Batch routes (Quản lý đợt chuyển tiền)
 $router->get('/transfer-batch', 'TransferBatch@index');

@@ -137,6 +137,132 @@ class RevenueController extends BaseController
         }
     }
 
+    public function edit($id)
+    {
+        try {
+            $user = $this->getUser();
+            // Only admin can edit revenue
+            if ($user['role'] !== 'admin') {
+                $_SESSION['error'] = 'Bạn không có quyền chỉnh sửa doanh thu';
+                $this->redirect('/Quan_ly_trung_tam/public/revenue');
+                return;
+            }
+
+            $revenue = $this->revenueModel->find($id);
+            if (!$revenue) {
+                $_SESSION['error'] = 'Không tìm thấy dữ liệu doanh thu';
+                $this->redirect('/Quan_ly_trung_tam/public/revenue');
+                return;
+            }
+
+            $courses = $this->courseModel->getActiveCourses();
+            $staff = $this->userModel->getStaffList();
+            $this->view('revenue/edit', [
+                'revenue' => $revenue,
+                'courses' => $courses,
+                'staff' => $staff,
+                'userRole' => $user['role']
+            ]);
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+            $this->redirect('/Quan_ly_trung_tam/public/revenue');
+        }
+    }
+
+    public function update($id)
+    {
+        try {
+            $user = $this->getUser();
+            // Only admin can update revenue
+            if ($user['role'] !== 'admin') {
+                $_SESSION['error'] = 'Bạn không có quyền chỉnh sửa doanh thu';
+                $this->redirect('/Quan_ly_trung_tam/public/revenue');
+                return;
+            }
+
+            $revenue = $this->revenueModel->find($id);
+            if (!$revenue) {
+                $_SESSION['error'] = 'Không tìm thấy dữ liệu doanh thu';
+                $this->redirect('/Quan_ly_trung_tam/public/revenue');
+                return;
+            }
+
+            $paymentDate = $_POST['payment_date'] ?? $revenue['payment_date'];
+            if (strtotime($paymentDate) > strtotime(date('Y-m-d'))) {
+                throw new Exception('Ngày đóng học phí không được vượt quá ngày hôm nay!');
+            }
+
+            $data = [
+                'payment_date' => $paymentDate,
+                'transfer_type' => $_POST['transfer_type'] ?? $revenue['transfer_type'],
+                'receipt_code' => trim($_POST['receipt_code'] ?? ($revenue['receipt_code'] ?? '')),
+                'amount' => str_replace(',', '', $_POST['amount'] ?? $revenue['amount']),
+                'student_name' => $_POST['student_name'] ?? $revenue['student_name'],
+                'course_id' => !empty($_POST['course_id']) ? $_POST['course_id'] : null,
+                'payment_content' => $_POST['payment_content'] ?? $revenue['payment_content'],
+                'staff_id' => $_POST['staff_id'] ?? ($revenue['staff_id'] ?? 1),
+                'notes' => $_POST['notes'] ?? ($revenue['notes'] ?? '')
+            ];
+
+            // Handle multiple new images (append to existing)
+            $uploadedFileNames = [];
+            if (isset($_FILES['confirmation_images']) && is_array($_FILES['confirmation_images']['name'])) {
+                $fileCount = count($_FILES['confirmation_images']['name']);
+                for ($i = 0; $i < $fileCount; $i++) {
+                    if ($_FILES['confirmation_images']['error'][$i] === UPLOAD_ERR_OK) {
+                        // Create custom filename
+                        $studentName = $this->slugify($data['student_name']);
+                        $dateStr = date('dmY', strtotime($data['payment_date']));
+                        $receiptCodePart = !empty($data['receipt_code']) ? $data['receipt_code'] : 'NO_CODE';
+                        $ext = pathinfo($_FILES['confirmation_images']['name'][$i], PATHINFO_EXTENSION);
+                        $customFileName = $receiptCodePart . '_' . $studentName . '_' . $dateStr . '_edit_' . ($i + 1) . '.' . $ext;
+
+                        $singleFile = [
+                            'name' => $_FILES['confirmation_images']['name'][$i],
+                            'type' => $_FILES['confirmation_images']['type'][$i],
+                            'tmp_name' => $_FILES['confirmation_images']['tmp_name'][$i],
+                            'error' => $_FILES['confirmation_images']['error'][$i],
+                            'size' => $_FILES['confirmation_images']['size'][$i]
+                        ];
+
+                        $fileName = $this->uploadFileWithCustomName($singleFile, $customFileName, ['jpg', 'jpeg', 'png', 'pdf']);
+                        $uploadedFileNames[] = $fileName;
+                    }
+                }
+
+                // Merge with existing confirmation_images JSON
+                if (!empty($uploadedFileNames)) {
+                    $existing = [];
+                    if (!empty($revenue['confirmation_images'])) {
+                        $decoded = json_decode($revenue['confirmation_images'], true);
+                        if (is_array($decoded)) {
+                            $existing = array_values(array_filter($decoded));
+                        }
+                    } elseif (!empty($revenue['confirmation_image'])) {
+                        $existing[] = $revenue['confirmation_image'];
+                    }
+                    $merged = array_values(array_unique(array_merge($existing, $uploadedFileNames)));
+                    $data['confirmation_image'] = $merged[0];
+                    $data['confirmation_images'] = json_encode($merged);
+                }
+            }
+
+            // Check duplicate receipt code excluding current record
+            if (!empty($data['receipt_code'])) {
+                if ($this->revenueModel->checkReceiptCodeExists($data['receipt_code'], $id)) {
+                    throw new Exception('Mã phiếu thu "' . $data['receipt_code'] . '" đã tồn tại!');
+                }
+            }
+
+            $this->revenueModel->update($id, $data);
+            $_SESSION['success'] = 'Cập nhật báo cáo doanh thu thành công!';
+            $this->redirect('/Quan_ly_trung_tam/public/revenue');
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+            $this->redirect('/Quan_ly_trung_tam/public/revenue/' . $id . '/edit');
+        }
+    }
+
     public function create()
     {
         try {
@@ -287,6 +413,68 @@ class RevenueController extends BaseController
         return $text;
     }
 
+    public function deleteImage($id)
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $user = $this->getUser();
+            if ($user['role'] !== 'admin') {
+                echo json_encode(['success' => false, 'message' => 'Bạn không có quyền xóa ảnh']);
+                return;
+            }
+
+            $revenue = $this->revenueModel->find($id);
+            if (!$revenue) {
+                echo json_encode(['success' => false, 'message' => 'Không tìm thấy dữ liệu doanh thu']);
+                return;
+            }
+
+            $fileToDelete = $_POST['file'] ?? '';
+            if (empty($fileToDelete)) {
+                echo json_encode(['success' => false, 'message' => 'Thiếu tên file cần xóa']);
+                return;
+            }
+
+            // Build existing images array
+            $existing = [];
+            if (!empty($revenue['confirmation_images'])) {
+                $decoded = json_decode($revenue['confirmation_images'], true);
+                if (is_array($decoded)) {
+                    $existing = array_values(array_filter($decoded));
+                }
+            }
+            if (empty($existing) && !empty($revenue['confirmation_image'])) {
+                $existing[] = $revenue['confirmation_image'];
+            }
+
+            // Check presence
+            if (!in_array($fileToDelete, $existing, true)) {
+                echo json_encode(['success' => false, 'message' => 'Ảnh không tồn tại trong giao dịch']);
+                return;
+            }
+
+            // Remove from array and delete file on disk
+            $this->deleteUploadedFile($fileToDelete);
+            $remaining = array_values(array_filter($existing, function($f) use ($fileToDelete) { return $f !== $fileToDelete; }));
+
+            // Update database fields
+            if (empty($remaining)) {
+                $this->revenueModel->update($id, [
+                    'confirmation_image' => null,
+                    'confirmation_images' => null
+                ]);
+            } else {
+                $this->revenueModel->update($id, [
+                    'confirmation_image' => $remaining[0],
+                    'confirmation_images' => json_encode($remaining)
+                ]);
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Đã xóa ảnh thành công', 'remaining' => $remaining]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
     // API Methods
     public function apiIndex()
     {
@@ -549,6 +737,50 @@ class RevenueController extends BaseController
             
         } catch (Exception $e) {
             $this->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
+        }
+    }
+
+    public function delete($id)
+    {
+        try {
+            $user = $this->getUser();
+            if ($user['role'] !== 'admin') {
+                $_SESSION['error'] = 'Bạn không có quyền xóa doanh thu';
+                $this->redirect('/Quan_ly_trung_tam/public/revenue');
+                return;
+            }
+
+            $revenue = $this->revenueModel->find($id);
+            if (!$revenue) {
+                $_SESSION['error'] = 'Không tìm thấy dữ liệu doanh thu';
+                $this->redirect('/Quan_ly_trung_tam/public/revenue');
+                return;
+            }
+
+            // Delete all related images if present
+            $allImages = [];
+            if (!empty($revenue['confirmation_images'])) {
+                $decoded = json_decode($revenue['confirmation_images'], true);
+                if (is_array($decoded)) { $allImages = array_values(array_filter($decoded)); }
+            }
+            if (!empty($revenue['confirmation_image'])) {
+                // Ensure single image also included
+                if (!in_array($revenue['confirmation_image'], $allImages, true)) {
+                    $allImages[] = $revenue['confirmation_image'];
+                }
+            }
+            foreach ($allImages as $img) {
+                $this->deleteUploadedFile($img);
+            }
+
+            // Delete record
+            $this->revenueModel->delete($id);
+
+            $_SESSION['success'] = 'Đã xóa giao dịch doanh thu thành công';
+            $this->redirect('/Quan_ly_trung_tam/public/revenue');
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+            $this->redirect('/Quan_ly_trung_tam/public/revenue');
         }
     }
 }
