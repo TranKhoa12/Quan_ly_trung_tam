@@ -333,6 +333,35 @@ class CertificateController extends BaseController
         }
     }
 
+    public function updateAvailableStatus($id)
+    {
+        try {
+            $user = $this->getUser();
+            
+            $available_status = $_POST['available_at_center'] ?? '';
+            
+            if (empty($available_status) || !in_array($available_status, ['yes', 'no'])) {
+                throw new Exception('Trạng thái không hợp lệ');
+            }
+            
+            $this->certificateModel->updateAvailableStatus($id, $available_status, $user['id']);
+            
+            $messages = [
+                'yes' => 'Đã xác nhận chứng nhận có tại trung tâm',
+                'no' => 'Đã chuyển về trạng thái chưa có tại trung tâm'
+            ];
+            
+            $_SESSION['success'] = $messages[$available_status];
+            
+            header('Location: /Quan_ly_trung_tam/public/certificates');
+            exit;
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+            header('Location: /Quan_ly_trung_tam/public/certificates');
+            exit;
+        }
+    }
+
     public function approve($id)
     {
         // Chỉ admin mới được duyệt/từ chối chứng nhận

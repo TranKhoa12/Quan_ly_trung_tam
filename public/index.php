@@ -104,6 +104,7 @@ $router->get('/certificates/{id}/edit', 'Certificate@edit');
 $router->post('/certificates/{id}/update', 'Certificate@update');
 $router->post('/certificates/{id}/status', 'Certificate@updateStatus');
 $router->post('/certificates/{id}/receive', 'Certificate@updateReceiveStatus');
+$router->post('/certificates/{id}/available', 'Certificate@updateAvailableStatus');
 $router->put('/certificates/{id}/approve', 'Certificate@approve');
 $router->get('/certificate-request', 'PublicCertificate@showForm');
 $router->post('/certificate-request', 'PublicCertificate@submit');

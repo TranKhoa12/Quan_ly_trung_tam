@@ -6,7 +6,8 @@ class Certificate extends BaseModel
     protected $fillable = [
         'student_name', 'username', 'phone', 'subject', 'email', 'receive_status',
         'approval_status', 'notes', 'requested_by', 'approved_by',
-        'approved_at', 'received_at', 'received_by'
+        'approved_at', 'received_at', 'received_by', 'available_at_center',
+        'available_date', 'available_confirmed_by'
     ];
     protected $timestamps = false; // Tắt timestamps cho bảng certificates
 
@@ -15,11 +16,13 @@ class Certificate extends BaseModel
         $sql = "SELECT c.*, 
                 u1.full_name as requested_by_name,
                 u2.full_name as approved_by_name,
-                u3.full_name as received_by_name 
+                u3.full_name as received_by_name,
+                u4.full_name as available_confirmed_by_name 
                 FROM certificates c 
                 LEFT JOIN users u1 ON c.requested_by = u1.id 
                 LEFT JOIN users u2 ON c.approved_by = u2.id 
-                LEFT JOIN users u3 ON c.received_by = u3.id";
+                LEFT JOIN users u3 ON c.received_by = u3.id 
+                LEFT JOIN users u4 ON c.available_confirmed_by = u4.id";
         $params = [];
         
         if (!empty($conditions)) {
@@ -47,11 +50,13 @@ class Certificate extends BaseModel
         $sql = "SELECT c.*, 
                 u1.full_name as requested_by_name,
                 u2.full_name as approved_by_name,
-                u3.full_name as received_by_name
+                u3.full_name as received_by_name,
+                u4.full_name as available_confirmed_by_name
                 FROM certificates c
                 LEFT JOIN users u1 ON c.requested_by = u1.id
                 LEFT JOIN users u2 ON c.approved_by = u2.id
                 LEFT JOIN users u3 ON c.received_by = u3.id
+                LEFT JOIN users u4 ON c.available_confirmed_by = u4.id
                 WHERE c.id = ?";
 
         return $this->db->fetch($sql, [$id]);
@@ -175,6 +180,24 @@ class Certificate extends BaseModel
             // Chuyển về not_received: xóa received_at và received_by
             $data['received_at'] = null;
             $data['received_by'] = null;
+        }
+        
+        return $this->update($certificateId, $data);
+    }
+
+    public function updateAvailableStatus($certificateId, $status, $userId = null)
+    {
+        $data = ['available_at_center' => $status];
+        
+        if ($status === 'yes') {
+            $data['available_date'] = date('Y-m-d H:i:s');
+            if ($userId) {
+                $data['available_confirmed_by'] = $userId;
+            }
+        } else {
+            // Chuyển về no: xóa available_date và available_confirmed_by
+            $data['available_date'] = null;
+            $data['available_confirmed_by'] = null;
         }
         
         return $this->update($certificateId, $data);

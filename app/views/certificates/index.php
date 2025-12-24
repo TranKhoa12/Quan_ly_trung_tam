@@ -177,6 +177,7 @@ ob_start();
                                 <th>Người yêu cầu</th>
                                 <th>Trạng thái duyệt</th>
                                 <th>Trạng thái nhận</th>
+                                <th>Chứng nhận đến TT</th>
                                 <th>Ngày tạo</th>
                                 <th>Hành động</th>
                             </tr>
@@ -309,6 +310,41 @@ ob_start();
                                         </div>
                                     </td>
                                     <td>
+                                        <?php
+                                        $availableColors = [
+                                            'no' => 'secondary',
+                                            'yes' => 'success'
+                                        ];
+                                        $availableLabels = [
+                                            'no' => 'Chưa có',
+                                            'yes' => 'Đã có'
+                                        ];
+                                        $availableIcons = [
+                                            'no' => 'fas fa-times-circle',
+                                            'yes' => 'fas fa-check-circle'
+                                        ];
+                                        $availableStatus = $cert['available_at_center'] ?? 'no';
+                                        $aColor = $availableColors[$availableStatus] ?? 'secondary';
+                                        $aLabel = $availableLabels[$availableStatus] ?? $availableStatus;
+                                        $aIcon = $availableIcons[$availableStatus] ?? 'fas fa-question';
+                                        ?>
+                                        <div>
+                                            <span class="badge bg-<?= $aColor ?>">
+                                                <i class="<?= $aIcon ?> me-1"></i><?= $aLabel ?>
+                                            </span>
+                                            <?php if (!empty($cert['available_date'])): ?>
+                                                <div class="mt-1">
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-calendar-alt me-1"></i><?= date('d/m/Y', strtotime($cert['available_date'])) ?>
+                                                    </small>
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-clock me-1"></i><?= date('H:i', strtotime($cert['available_date'])) ?>
+                                                    </small>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                    <td>
                                         <div>
                                             <span class="fw-semibold"><?= date('d/m/Y', strtotime($cert['created_at'])) ?></span>
                                             <br><small class="text-muted"><?= date('H:i', strtotime($cert['created_at'])) ?></small>
@@ -391,6 +427,27 @@ ob_start();
                                                             <a class="dropdown-item text-warning" href="#" 
                                                                onclick="updateReceiveStatus(<?= $cert['id'] ?>, 'not_received', '<?= $cert['approval_status'] ?>'); return false;">
                                                                 <i class="fas fa-undo me-2"></i>Chuyển về Chưa nhận
+                                                            </a>
+                                                        </li>
+                                                    <?php endif; ?>
+                                                    
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    
+                                                    <?php 
+                                                    $availableStatus = $cert['available_at_center'] ?? 'no';
+                                                    if ($availableStatus === 'no'): 
+                                                    ?>
+                                                        <li>
+                                                            <a class="dropdown-item text-primary" href="#" 
+                                                               onclick="updateAvailableStatus(<?= $cert['id'] ?>, 'yes'); return false;">
+                                                                <i class="fas fa-building me-2"></i>Xác nhận có tại TT
+                                                            </a>
+                                                        </li>
+                                                    <?php else: ?>
+                                                        <li>
+                                                            <a class="dropdown-item text-secondary" href="#" 
+                                                               onclick="updateAvailableStatus(<?= $cert['id'] ?>, 'no'); return false;">
+                                                                <i class="fas fa-undo me-2"></i>Chuyển về chưa có tại TT
                                                             </a>
                                                         </li>
                                                     <?php endif; ?>
@@ -569,6 +626,28 @@ function updateCertificateStatus(certId, status) {
 
 function updateCertificateReceiveStatus(certId, status) {
     updateReceiveStatus(certId, status);
+}
+
+function updateAvailableStatus(certId, status) {
+    const messages = {
+        "yes": "Xác nhận chứng nhận đã có tại trung tâm?",
+        "no": "Bạn có chắc chắn muốn chuyển về trạng thái chưa có tại trung tâm?"
+    };
+    
+    if (confirm(messages[status] || "Bạn có chắc chắn muốn thay đổi trạng thái này?")) {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/Quan_ly_trung_tam/public/certificates/" + certId + "/available";
+        
+        const statusInput = document.createElement("input");
+        statusInput.type = "hidden";
+        statusInput.name = "available_at_center";
+        statusInput.value = status;
+        
+        form.appendChild(statusInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 // Chọn tất cả checkbox
