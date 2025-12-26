@@ -183,6 +183,12 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         </a>
                     </div>
                     <div class="nav-item">
+                        <a href="/Quan_ly_trung_tam/public/extension-download.php" class="nav-link">
+                            <i class="fas fa-puzzle-piece"></i>
+                            <span>Cài đặt Extension</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
                         <a href="<?= $buildUrl('logout') ?>" class="nav-link" onclick="return confirm('Bạn có chắc muốn đăng xuất?')">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Đăng xuất</span>

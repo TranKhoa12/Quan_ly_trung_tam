@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Generator - Certificate Auto Fill</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .preview-section {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .icon-preview {
+            text-align: center;
+        }
+        
+        .icon-preview canvas {
+            display: block;
+            margin: 10px auto;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .icon-preview p {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            color: #856404;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 8px 0;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .status.show {
+            display: block;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Icon Generator</h1>
+        <p class="subtitle">Certificate Auto Fill Extension</p>
+        
+        <div class="preview-section">
+            <div class="icon-preview">
+                <canvas id="canvas16" width="16" height="16"></canvas>
+                <p>16x16</p>
+            </div>
+            <div class="icon-preview">
+                <canvas id="canvas48" width="48" height="48"></canvas>
+                <p>48x48</p>
+            </div>
+            <div class="icon-preview">
+                <canvas id="canvas128" width="128" height="128"></canvas>
+                <p>128x128</p>
+            </div>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="generateIcons()">
+                🎨 Tạo Icons
+            </button>
+            <button class="btn btn-success" onclick="downloadAll()">
+                💾 Tải tất cả
+            </button>
+        </div>
+        
+        <div class="instructions">
+            <h3>📝 Hướng dẫn:</h3>
+            <ol>
+                <li>Click "Tạo Icons" để tạo 3 kích thước icon</li>
+                <li>Click "Tải tất cả" để download các file PNG</li>
+                <li>Đổi tên các file thành:
+                    <ul>
+                        <li>icon16.png (16x16)</li>
+                        <li>icon48.png (48x48)</li>
+                        <li>icon128.png (128x128)</li>
+                    </ul>
+                </li>
+                <li>Copy vào thư mục: <code>certificate-auto-fill/icons/</code></li>
+                <li>Reload extension trong Chrome</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Icon design function
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 128;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Draw gradient background circle
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.47, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw certificate (white rectangle)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.beginPath();
+            ctx.roundRect(size * 0.25, size * 0.27, size * 0.5, size * 0.39, size * 0.02);
+            ctx.fill();
+            
+            // Draw ribbon
+            const ribbonGradient = ctx.createLinearGradient(0, size * 0.66, 0, size * 0.86);
+            ribbonGradient.addColorStop(0, '#FFD700');
+            ribbonGradient.addColorStop(1, '#FFA500');
+            
+            ctx.fillStyle = ribbonGradient;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.44, size * 0.66);
+            ctx.lineTo(size * 0.44, size * 0.86);
+            ctx.lineTo(size * 0.5, size * 0.82);
+            ctx.lineTo(size * 0.56, size * 0.86);
+            ctx.lineTo(size * 0.56, size * 0.66);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw text lines on certificate (only if size >= 48)
+            if (size >= 48) {
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = Math.max(1, size * 0.015);
+                ctx.lineCap = 'round';
+                
+                // Line 1
+                ctx.beginPath();
+                ctx.moveTo(size * 0.31, size * 0.35);
+                ctx.lineTo(size * 0.69, size * 0.35);
+                ctx.stroke();
+                
+                // Line 2
+                ctx.strokeStyle = '#764ba2';
+                ctx.beginPath();
+                ctx.moveTo(size * 0.31, size * 0.43);
+                ctx.lineTo(size * 0.625, size * 0.43);
+                ctx.stroke();
+                
+                // Line 3
+                ctx.strokeStyle = '#667eea';
+                ctx.beginPath();
+                ctx.moveTo(size * 0.31, size * 0.51);
+                ctx.lineTo(size * 0.69, size * 0.51);
+                ctx.stroke();
+                
+                // Line 4
+                ctx.strokeStyle = '#764ba2';
+                ctx.beginPath();
+                ctx.moveTo(size * 0.31, size * 0.59);
+                ctx.lineTo(size * 0.59, size * 0.59);
+                ctx.stroke();
+            }
+            
+            // Draw star (only if size >= 48)
+            if (size >= 48) {
+                // Star background
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.8)';
+                ctx.beginPath();
+                ctx.arc(size * 0.5, size * 0.43, size * 0.0625, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Star shape
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                const centerX = size * 0.5;
+                const centerY = size * 0.43;
+                const spikes = 5;
+                const outerRadius = size * 0.047;
+                const innerRadius = size * 0.023;
+                
+                for (let i = 0; i < spikes * 2; i++) {
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        // Helper for roundRect (for older browsers)
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+                this.moveTo(x + radius, y);
+                this.lineTo(x + width - radius, y);
+                this.quadraticCurveTo(x + width, y, x + width, y + radius);
+                this.lineTo(x + width, y + height - radius);
+                this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                this.lineTo(x + radius, y + height);
+                this.quadraticCurveTo(x, y + height, x, y + height - radius);
+                this.lineTo(x, y + radius);
+                this.quadraticCurveTo(x, y, x + radius, y);
+                this.closePath();
+            };
+        }
+        
+        // Generate icons
+        function generateIcons() {
+            drawIcon(document.getElementById('canvas16'), 16);
+            drawIcon(document.getElementById('canvas48'), 48);
+            drawIcon(document.getElementById('canvas128'), 128);
+            
+            showStatus('✅ Đã tạo icons thành công! Bây giờ bạn có thể tải xuống.', 'success');
+        }
+        
+        // Download single icon
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Download all icons
+        function downloadAll() {
+            setTimeout(() => downloadIcon('canvas16', 'icon16.png'), 100);
+            setTimeout(() => downloadIcon('canvas48', 'icon48.png'), 300);
+            setTimeout(() => downloadIcon('canvas128', 'icon128.png'), 500);
+            
+            showStatus('💾 Đang tải xuống 3 file icons...', 'success');
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status show ${type}`;
+            
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Auto-generate on load
+        window.onload = function() {
+            generateIcons();
+        };
+    </script>
+</body>
+</html>

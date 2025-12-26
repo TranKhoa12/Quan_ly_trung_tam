@@ -1,0 +1,12 @@
+# Thư mục chứa icons cho extension
+# 
+# Vui lòng thêm 3 file icon:
+# - icon16.png (16x16 pixels)
+# - icon48.png (48x48 pixels)  
+# - icon128.png (128x128 pixels)
+#
+# Bạn có thể tạo icon bằng các công cụ:
+# - https://www.flaticon.com/
+# - https://icons8.com/
+# - Photoshop / GIMP
+# - Online icon generators

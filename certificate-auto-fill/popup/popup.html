@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Auto Fill</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📋 Trợ Lý Doanh Thu</h2>
+            <p class="subtitle">Trung tâm Tin học Sao Việt</p>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div class="section">
+            <h3>📊 Dữ liệu đã lưu</h3>
+            <div id="savedData" class="data-preview">
+                <p class="empty">Chưa có dữ liệu. Vui lòng lấy dữ liệu từ trang học viên.</p>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button id="extractBtn" class="btn btn-primary">
+                <span class="btn-icon">📄</span>
+                <span class="btn-text">Lấy dữ liệu từ form</span>
+            </button>
+            <button id="fillBtn" class="btn btn-success">
+                <span class="btn-icon">✅</span>
+                <span class="btn-text">Điền vào form báo cáo doanh thu</span>
+            </button>
+            <button id="clearBtn" class="btn btn-danger">
+                <span class="btn-icon">🗑️</span>
+                <span class="btn-text">Xóa dữ liệu</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

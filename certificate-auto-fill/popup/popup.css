@@ -1,0 +1,233 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 420px;
+    min-height: 500px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #4154f1 0%, #677ce4 100%);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    background: white;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+}
+
+.header {
+    background: linear-gradient(90deg, #4154f1 0%, #677ce4 100%);
+    color: white;
+    padding: 25px 20px;
+    border-radius: 0;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(65, 84, 241, 0.3);
+}
+
+.header h2 {
+    margin-bottom: 8px;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.subtitle {
+    font-size: 13px;
+    opacity: 0.95;
+    font-weight: 400;
+}
+
+.section {
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.section h3 {
+    font-size: 15px;
+    margin-bottom: 12px;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.data-preview {
+    background: #f6f9ff;
+    padding: 15px;
+    border-radius: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 13px;
+    border: 1px solid #e3ecff;
+}
+
+.data-preview p.empty {
+    color: #6c757d;
+    text-align: center;
+    padding: 20px 10px;
+    line-height: 1.6;
+}
+
+.data-item {
+    margin: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.data-item:last-child {
+    border-bottom: none;
+}
+
+.data-label {
+    font-weight: 600;
+    color: #4154f1;
+    font-size: 12px;
+}
+
+.data-value {
+    color: #2c3e50;
+    text-align: right;
+    font-weight: 500;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.buttons {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn {
+    padding: 14px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-icon {
+    font-size: 16px;
+}
+
+.btn-text {
+    flex: 1;
+    text-align: center;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #4154f1 0%, #677ce4 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, #3544d9 0%, #5669d8 100%);
+}
+
+.btn-success {
+    background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(90deg, #0e8178 0%, #2fd36a 100%);
+}
+
+.btn-danger {
+    background: linear-gradient(90deg, #eb3349 0%, #f45c43 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(90deg, #d62839 0%, #e04935 100%);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.status {
+    padding: 12px 20px;
+    margin: 15px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    display: none;
+    font-weight: 500;
+}
+
+.status.show {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.status.success {
+    background: #d1f2eb;
+    color: #0c5e47;
+    border: 1px solid #b8e6d9;
+}
+
+.status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.info p {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.info ol {
+    font-size: 11px;
+    color: #666;
+    padding-left: 20px;
+}
+
+.info li {
+    margin: 3px 0;
+}
