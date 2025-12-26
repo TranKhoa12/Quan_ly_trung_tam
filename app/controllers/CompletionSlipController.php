@@ -258,6 +258,10 @@ class CompletionSlipController extends BaseController
 
     public function exportPdf()
     {
+        // Tăng memory limit và timeout cho việc xử lý PDF
+        @ini_set('memory_limit', '256M');
+        @ini_set('max_execution_time', '300');
+        
         $user = $this->getUser();
         if (($user['role'] ?? 'staff') !== 'admin') {
             $_SESSION['error'] = 'Chỉ quản trị viên mới có quyền xuất PDF.';
@@ -266,6 +270,7 @@ class CompletionSlipController extends BaseController
         }
 
         $filters = $this->buildFilters($_GET);
+        $attachments = [];
 
         try {
             $slips = $this->completionSlipModel->getAllWithRelations($filters);
@@ -276,8 +281,15 @@ class CompletionSlipController extends BaseController
             }
 
             $autoloadPath = defined('BASE_PATH') ? BASE_PATH . '/vendor/autoload.php' : dirname(__DIR__, 2) . '/vendor/autoload.php';
-            if (file_exists($autoloadPath)) {
-                require_once $autoloadPath;
+            if (!file_exists($autoloadPath)) {
+                throw new Exception('Thư viện PDF chưa được cài đặt. Vui lòng chạy: composer install');
+            }
+            
+            require_once $autoloadPath;
+            
+            // Kiểm tra class FPDI có tồn tại không
+            if (!class_exists('\setasign\Fpdi\Tcpdf\Fpdi')) {
+                throw new Exception('Thư viện FPDI chưa được cài đặt đúng.');
             }
 
             $pdf = new \setasign\Fpdi\Tcpdf\Fpdi('P', 'mm', 'A4', true, 'UTF-8');
@@ -365,9 +377,19 @@ class CompletionSlipController extends BaseController
             }
 
             $pdf->Output($fileName, 'D');
+            
+            // Cleanup temporary files downloaded from Cloudinary
+            $this->cleanupTempFiles($attachments);
+            
             exit;
         } catch (Exception $e) {
             error_log('CompletionSlip exportPdf error: ' . $e->getMessage());
+            
+            // Cleanup temp files nếu có lỗi
+            if (!empty($attachments)) {
+                $this->cleanupTempFiles($attachments);
+            }
+            
             $_SESSION['error'] = $e->getMessage();
             $this->redirect('/Quan_ly_trung_tam/public/completion-slips');
         }
@@ -423,22 +445,48 @@ class CompletionSlipController extends BaseController
             }
 
             foreach ($imageList as $fileName) {
-                $path = $this->getUploadAbsolutePath($fileName);
-                if (!$path || !is_file($path)) {
-                    continue;
-                }
+                // Kiểm tra nếu là Cloudinary file (JSON format)
+                if ($this->isCloudinaryFile($fileName)) {
+                    $cloudinaryData = json_decode($fileName, true);
+                    $url = $cloudinaryData['url'] ?? null;
+                    $originalName = $cloudinaryData['name'] ?? 'cloudinary-file';
+                    
+                    if ($url) {
+                        // Download từ Cloudinary về temp file
+                        $tempPath = $this->downloadCloudinaryFile($url, $originalName);
+                        if ($tempPath) {
+                            $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                            if (in_array($extension, ['jpg', 'jpeg', 'png', 'pdf'], true)) {
+                                $files[] = [
+                                    'path' => $tempPath,
+                                    'name' => $originalName,
+                                    'extension' => $extension,
+                                    'slip' => $slip,
+                                    'is_temp' => true // Đánh dấu để xóa sau khi dùng
+                                ];
+                            }
+                        }
+                    }
+                } else {
+                    // File local
+                    $path = $this->getUploadAbsolutePath($fileName);
+                    if (!$path || !is_file($path)) {
+                        continue;
+                    }
 
-                $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-                if (!in_array($extension, ['jpg', 'jpeg', 'png', 'pdf'], true)) {
-                    continue;
-                }
+                    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                    if (!in_array($extension, ['jpg', 'jpeg', 'png', 'pdf'], true)) {
+                        continue;
+                    }
 
-                $files[] = [
-                    'path' => $path,
-                    'name' => $fileName,
-                    'extension' => $extension,
-                    'slip' => $slip
-                ];
+                    $files[] = [
+                        'path' => $path,
+                        'name' => $fileName,
+                        'extension' => $extension,
+                        'slip' => $slip,
+                        'is_temp' => false
+                    ];
+                }
             }
         }
 
@@ -651,6 +699,67 @@ class CompletionSlipController extends BaseController
         } catch (Exception $e) {
             error_log('CompletionSlip deleteMultiple error: ' . $e->getMessage());
             $this->json(['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Download Cloudinary file to temporary location
+     */
+    private function downloadCloudinaryFile(string $url, string $originalName): ?string
+    {
+        try {
+            $tempDir = sys_get_temp_dir();
+            $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+            $tempFile = $tempDir . '/cloudinary_' . uniqid() . '.' . $extension;
+            
+            // Sử dụng cURL thay vì file_get_contents() vì hosting có thể tắt allow_url_fopen
+            if (function_exists('curl_init')) {
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+                
+                $content = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $error = curl_error($ch);
+                curl_close($ch);
+                
+                if ($content === false || $httpCode !== 200) {
+                    error_log("Failed to download Cloudinary file via cURL: $url (HTTP $httpCode) - $error");
+                    return null;
+                }
+            } else {
+                // Fallback to file_get_contents nếu cURL không có
+                $content = @file_get_contents($url);
+                if ($content === false) {
+                    error_log("Failed to download Cloudinary file: $url");
+                    return null;
+                }
+            }
+            
+            if (file_put_contents($tempFile, $content) === false) {
+                error_log("Failed to save temp file: $tempFile");
+                return null;
+            }
+            
+            return $tempFile;
+        } catch (Exception $e) {
+            error_log("Error downloading Cloudinary file: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Clean up temporary files after PDF generation
+     */
+    private function cleanupTempFiles(array $attachments): void
+    {
+        foreach ($attachments as $attachment) {
+            if (!empty($attachment['is_temp']) && file_exists($attachment['path'])) {
+                @unlink($attachment['path']);
+            }
         }
     }
 }
