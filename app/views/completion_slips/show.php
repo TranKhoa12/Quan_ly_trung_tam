@@ -75,15 +75,15 @@ echo pageHeader(
                                         <?php if (preg_match('/\.pdf$/i', $image)): ?>
                                             <div class="text-center flex-grow-1 d-flex flex-column justify-content-center">
                                                 <i class="fas fa-file-pdf text-danger fs-1 mb-2"></i>
-                                                <a href="<?= htmlspecialchars($uploadsPath . $image) ?>" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                                                <a href="<?= htmlspecialchars(getFileUrl($image)) ?>" target="_blank" class="btn btn-sm btn-outline-primary w-100">
                                                     <i class="fas fa-download me-1"></i>Tải PDF
                                                 </a>
                                             </div>
                                         <?php else: ?>
-                                            <a href="<?= htmlspecialchars($uploadsPath . $image) ?>" target="_blank" class="d-block mb-2">
-                                                <img src="<?= htmlspecialchars($uploadsPath . $image) ?>" class="img-fluid rounded" alt="Ảnh phiếu">
+                                            <a href="<?= htmlspecialchars(getFileUrl($image)) ?>" target="_blank" class="d-block mb-2">
+                                                <img src="<?= htmlspecialchars(getFileUrl($image)) ?>" class="img-fluid rounded" alt="Ảnh phiếu">
                                             </a>
-                                            <a href="<?= htmlspecialchars($uploadsPath . $image) ?>" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                                            <a href="<?= htmlspecialchars(getFileUrl($image)) ?>" target="_blank" class="btn btn-sm btn-outline-primary w-100">
                                                 <i class="fas fa-eye me-1"></i>Xem chi tiết
                                             </a>
                                         <?php endif; ?>

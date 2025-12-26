@@ -518,18 +518,9 @@ class CompletionSlipController extends BaseController
     private function cleanupUploads(array $files)
     {
         foreach ($files as $file) {
+            // Use inherited deleteUploadedFile() from BaseController
+            // which supports both Cloudinary and local files
             $this->deleteUploadedFile($file);
-        }
-    }
-
-    private function deleteUploadedFile($fileName)
-    {
-        $filePath = defined('BASE_PATH')
-            ? BASE_PATH . '/public/uploads/' . $fileName
-            : dirname(__DIR__, 2) . '/public/uploads/' . $fileName;
-
-        if (is_file($filePath)) {
-            @unlink($filePath);
         }
     }
 

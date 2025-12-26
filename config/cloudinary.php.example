@@ -1,0 +1,16 @@
+<?php
+
+return [
+    'enabled' => false,
+    'cloud_name' => 'YOUR_CLOUD_NAME',
+    'api_key' => 'YOUR_API_KEY',
+    'api_secret' => 'YOUR_API_SECRET',
+    'default_folder' => 'quan-ly-trung-tam',
+    
+    'folders' => [
+        'revenue_images' => 'quan-ly-trung-tam/revenue',
+        'completion_slips' => 'quan-ly-trung-tam/completion-slips',
+        'student_tracking' => 'quan-ly-trung-tam/students',
+        'certificates' => 'quan-ly-trung-tam/certificates',
+    ],
+];

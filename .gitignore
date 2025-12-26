@@ -1,5 +1,7 @@
-# Google Credentials (SENSITIVE)
+# Cloud Storage Credentials (SENSITIVE)
 config/google-credentials.json
+config/google-drive.php
+config/cloudinary.php
 
 # Vendor
 vendor/

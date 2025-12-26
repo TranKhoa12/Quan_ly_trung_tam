@@ -376,19 +376,6 @@ class RevenueController extends BaseController
         }
     }
 
-    private function deleteUploadedFile($fileName)
-    {
-        if (defined('BASE_PATH')) {
-            $filePath = BASE_PATH . '/public/uploads/' . $fileName;
-        } else {
-            $filePath = dirname(__DIR__, 2) . '/public/uploads/' . $fileName;
-        }
-        
-        if (file_exists($filePath)) {
-            @unlink($filePath);
-        }
-    }
-
     private function slugify($text)
     {
         // Remove Vietnamese accents

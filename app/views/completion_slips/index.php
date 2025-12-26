@@ -203,8 +203,8 @@ echo pageHeader(
                                     <td>
                                         <?php if (!empty($images)): 
                                             $imageCount = count($images);
-                                            $imageData = json_encode(array_map(function($img) use ($basePath) {
-                                                return $basePath . '/uploads/' . $img;
+                                            $imageData = json_encode(array_map(function($img) {
+                                                return getFileUrl($img);
                                             }, $images));
                                         ?>
                                             <button type="button" 

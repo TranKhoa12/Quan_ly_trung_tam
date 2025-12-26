@@ -104,8 +104,8 @@ ob_start();
                                     <div class="mt-2 d-flex flex-wrap gap-2" id="existingImages">
                                         <?php foreach ($existingImages as $img): ?>
                                         <div class="d-flex align-items-center gap-2 border rounded px-2 py-1" data-filename="<?= htmlspecialchars($img) ?>">
-                                            <a href="/Quan_ly_trung_tam/public/uploads/<?= htmlspecialchars($img) ?>" target="_blank" class="btn btn-sm btn-outline-info">
-                                                <i class="fas fa-image me-1"></i><?= htmlspecialchars($img) ?>
+                                            <a href="<?= htmlspecialchars(getFileUrl($img)) ?>" target="_blank" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-image me-1"></i><?= htmlspecialchars(isCloudinaryFile($img) ? json_decode($img, true)['name'] : $img) ?>
                                             </a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteImage('<?= htmlspecialchars($img) ?>')">
                                                 <i class="fas fa-trash me-1"></i>Xóa

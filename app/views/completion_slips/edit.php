@@ -143,17 +143,17 @@ echo pageHeader(
                                         <div class="text-center d-flex flex-column align-items-center justify-content-center" style="min-height: 150px;">
                                             <i class="fas fa-file-pdf text-danger mb-2" style="font-size: 3rem;"></i>
                                             <small class="text-muted mb-2">PDF #<?= $index + 1 ?></small>
-                                            <a href="<?= htmlspecialchars($uploadsPath . $image) ?>" 
+                                            <a href="<?= htmlspecialchars(getFileUrl($image)) ?>" 
                                                target="_blank" 
                                                class="btn btn-sm btn-outline-primary w-100">
                                                 <i class="fas fa-external-link-alt me-1"></i>Xem
                                             </a>
                                         </div>
                                     <?php else: ?>
-                                        <a href="<?= htmlspecialchars($uploadsPath . $image) ?>" 
+                                        <a href="<?= htmlspecialchars(getFileUrl($image)) ?>" 
                                            target="_blank" 
                                            class="d-block mb-2">
-                                            <img src="<?= htmlspecialchars($uploadsPath . $image) ?>" 
+                                            <img src="<?= htmlspecialchars(getFileUrl($image)) ?>" 
                                                  class="img-fluid rounded" 
                                                  alt="Ảnh #<?= $index + 1 ?>"
                                                  style="height: 150px; width: 100%; object-fit: cover;">

@@ -1,5 +1,8 @@
 <?php
 
+// Load view helpers
+require_once __DIR__ . '/../app/helpers/view_helpers.php';
+
 class BaseController
 {
     protected $db;
@@ -119,7 +122,15 @@ class BaseController
         return $errors;
     }
 
-    protected function uploadFile($file, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'])
+    /**
+     * Upload file lên Cloudinary (nếu được config) hoặc local storage
+     * 
+     * @param array $file - $_FILES array element
+     * @param array $allowedTypes - Các loại file được phép
+     * @param bool $useCloudinary - Force sử dụng Cloudinary (default: auto-detect từ config)
+     * @return string - Trả về file name (local) hoặc JSON string (Cloudinary)
+     */
+    protected function uploadFile($file, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'], $useCloudinary = null)
     {
         if (!isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
             throw new Exception('File upload error');
@@ -133,16 +144,21 @@ class BaseController
         }
 
         $fileName = uniqid() . '.' . $extension;
+
+        // Kiểm tra có dùng Cloudinary không
+        $shouldUseCloudinary = $useCloudinary ?? $this->shouldUseCloudinary();
+
+        if ($shouldUseCloudinary) {
+            return $this->uploadToCloudinary($file, $fileName);
+        }
         
-        // Get correct path to uploads directory
-        // Use BASE_PATH constant if available, fallback to calculated path
+        // Upload local
         if (defined('BASE_PATH')) {
             $uploadDir = BASE_PATH . '/public/uploads/';
         } else {
             $uploadDir = dirname(__DIR__) . '/public/uploads/';
         }
         
-        // Ensure upload directory exists and is writable
         if (!is_dir($uploadDir)) {
             if (!mkdir($uploadDir, 0777, true)) {
                 throw new Exception('Cannot create upload directory: ' . $uploadDir);
@@ -162,7 +178,10 @@ class BaseController
         return $fileName;
     }
 
-    protected function uploadFileWithCustomName($file, $customFileName, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'])
+    /**
+     * Upload file với tên tùy chỉnh (local hoặc Cloudinary)
+     */
+    protected function uploadFileWithCustomName($file, $customFileName, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'], $useCloudinary = null)
     {
         if (!isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
             throw new Exception('File upload error');
@@ -175,17 +194,20 @@ class BaseController
             throw new Exception('File type not allowed');
         }
 
-        // Use custom filename
         $fileName = $customFileName;
+        $shouldUseCloudinary = $useCloudinary ?? $this->shouldUseCloudinary();
+
+        if ($shouldUseCloudinary) {
+            return $this->uploadToCloudinary($file, $fileName);
+        }
         
-        // Get correct path to uploads directory
+        // Upload local
         if (defined('BASE_PATH')) {
             $uploadDir = BASE_PATH . '/public/uploads/';
         } else {
             $uploadDir = dirname(__DIR__) . '/public/uploads/';
         }
         
-        // Ensure upload directory exists and is writable
         if (!is_dir($uploadDir)) {
             if (!mkdir($uploadDir, 0777, true)) {
                 throw new Exception('Cannot create upload directory: ' . $uploadDir);
@@ -203,5 +225,127 @@ class BaseController
         }
 
         return $fileName;
+    }
+
+    /**
+     * Kiểm tra có nên sử dụng Cloudinary không
+     */
+    protected function shouldUseCloudinary()
+    {
+        $configPath = __DIR__ . '/../config/cloudinary.php';
+        if (file_exists($configPath)) {
+            $config = require $configPath;
+            return isset($config['enabled']) && $config['enabled'] === true;
+        }
+        return false;
+    }
+
+    /**
+     * Upload file lên Cloudinary
+     * 
+     * @param array $file - $_FILES array element
+     * @param string $fileName - Tên file
+     * @return string - JSON string: {"id":"xxx","url":"xxx","name":"xxx"}
+     */
+    protected function uploadToCloudinary($file, $fileName)
+    {
+        require_once __DIR__ . '/../app/helpers/CloudinaryStorage.php';
+        
+        try {
+            $cloudinary = new CloudinaryStorage();
+            $result = $cloudinary->uploadFromUpload($file, $fileName);
+            
+            // Trả về dạng JSON string để lưu vào database
+            return json_encode($result);
+        } catch (Exception $e) {
+            error_log('Cloudinary upload failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Xóa file (từ Cloudinary hoặc local)
+     * 
+     * @param string $fileInfo - Tên file (local) hoặc JSON string (Cloudinary)
+     * @return bool
+     */
+    protected function deleteUploadedFile($fileInfo)
+    {
+        // Kiểm tra nếu là Cloudinary (JSON format)
+        if ($this->isCloudinaryFile($fileInfo)) {
+            return $this->deleteFromCloudinary($fileInfo);
+        }
+
+        // Xóa file local
+        if (defined('BASE_PATH')) {
+            $uploadDir = BASE_PATH . '/public/uploads/';
+        } else {
+            $uploadDir = dirname(__DIR__) . '/public/uploads/';
+        }
+        
+        $filePath = $uploadDir . $fileInfo;
+        
+        if (file_exists($filePath)) {
+            return unlink($filePath);
+        }
+        
+        return false;
+    }
+
+    /**
+     * Kiểm tra xem file có phải từ Cloudinary không
+     */
+    protected function isCloudinaryFile($fileInfo)
+    {
+        if (empty($fileInfo)) {
+            return false;
+        }
+        
+        // Kiểm tra nếu là JSON và có trường 'id' và 'url'
+        $decoded = json_decode($fileInfo, true);
+        return $decoded && isset($decoded['id']) && isset($decoded['url']);
+    }
+
+    /**
+     * Xóa file từ Cloudinary
+     */
+    protected function deleteFromCloudinary($fileInfo)
+    {
+        require_once __DIR__ . '/../app/helpers/CloudinaryStorage.php';
+        
+        try {
+            $decoded = json_decode($fileInfo, true);
+            if (!$decoded || !isset($decoded['id'])) {
+                return false;
+            }
+
+            $cloudinary = new CloudinaryStorage();
+            return $cloudinary->deleteFile($decoded['id']);
+        } catch (Exception $e) {
+            error_log('Cloudinary delete failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Lấy URL hiển thị file (Cloudinary hoặc local)
+     * 
+     * @param string $fileInfo - Tên file (local) hoặc JSON string (Cloudinary)
+     * @return string
+     */
+    protected function getFileUrl($fileInfo)
+    {
+        if (empty($fileInfo)) {
+            return '';
+        }
+
+        // Nếu là Cloudinary file
+        if ($this->isCloudinaryFile($fileInfo)) {
+            $decoded = json_decode($fileInfo, true);
+            return $decoded['url'] ?? '';
+        }
+
+        // Local file
+        return '/Quan_ly_trung_tam/public/uploads/' . $fileInfo;
     }
 }

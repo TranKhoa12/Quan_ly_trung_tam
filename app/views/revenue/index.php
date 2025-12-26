@@ -362,7 +362,7 @@ $headerButtons .= '<a href="/Quan_ly_trung_tam/public/revenue/create" class="btn
                                         if (!empty($allImages)): 
                                             $imageCount = count($allImages);
                                             $imageData = json_encode(array_map(function($img) {
-                                                return '/Quan_ly_trung_tam/public/uploads/' . $img;
+                                                return getFileUrl($img);
                                             }, $allImages));
                                         ?>
                                             <button type="button" 
