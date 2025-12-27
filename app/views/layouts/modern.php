@@ -221,6 +221,9 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                     <button class="header-btn mobile-menu-btn d-lg-none" onclick="toggleSidebar()">
                         <i class="fas fa-bars"></i>
                     </button>
+                    <button class="header-btn d-none d-lg-flex" id="collapseSidebarBtn" onclick="toggleSidebarCollapse()" aria-expanded="true" title="Thu gọn / Mở rộng menu">
+                        <i class="fas fa-angles-left" id="collapseSidebarIcon"></i>
+                    </button>
                     <div>
                         <h1 class="page-title"><?= $pageTitle ?? 'Dashboard' ?></h1>
                         <!-- <nav class="breadcrumb">
@@ -323,6 +326,34 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         document.body.style.overflow = '';
     }
 
+    function setSidebarCollapsed(collapsed) {
+        const sidebar = document.getElementById('sidebar');
+        const icon = document.getElementById('collapseSidebarIcon');
+        const btn = document.getElementById('collapseSidebarBtn');
+        if (!sidebar) return;
+        sidebar.classList.toggle('collapsed', collapsed);
+        document.body.classList.toggle('sidebar-collapsed', collapsed);
+        if (icon) {
+            icon.classList.toggle('fa-angles-left', !collapsed);
+            icon.classList.toggle('fa-angles-right', collapsed);
+        }
+        if (btn) {
+            btn.setAttribute('aria-expanded', (!collapsed).toString());
+        }
+        try {
+            localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+        } catch (e) {
+            /* ignore storage errors */
+        }
+    }
+
+    function toggleSidebarCollapse() {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        const willCollapse = !sidebar.classList.contains('collapsed');
+        setSidebarCollapsed(willCollapse);
+    }
+
     // Header Functions
     function toggleUserMenu(event) {
         event.stopPropagation();
@@ -352,6 +383,17 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         if (!event.target.closest('.user-menu-wrapper')) {
             dropdown.classList.remove('show');
             btn.classList.remove('active');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const saved = localStorage.getItem('sidebarCollapsed') === '1';
+            if (saved) {
+                setSidebarCollapsed(true);
+            }
+        } catch (e) {
+            /* ignore storage errors */
         }
     });
 

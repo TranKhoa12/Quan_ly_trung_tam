@@ -29,6 +29,31 @@ ob_start();
         </div>
 </div>
 
+<!-- Quick Access Top Row -->
+<div class="quick-access-row slide-up" style="animation-delay: 0.1s;">
+    <div class="quick-access-header">
+        <h3 class="section-title mb-1">
+            <i class="fas fa-bolt me-2"></i>
+            Truy cập nhanh
+        </h3>
+        <p class="section-subtitle mb-0">Các thao tác thường dùng</p>
+    </div>
+    <div class="quick-access-buttons">
+        <a href="<?= $adminBasePath ?>/reports" class="quick-chip primary">
+            <i class="fas fa-chart-bar me-2"></i>Xem tất cả báo cáo
+        </a>
+        <a href="<?= $adminBasePath ?>/revenue" class="quick-chip success">
+            <i class="fas fa-money-bill-wave me-2"></i>Xem doanh thu
+        </a>
+        <a href="<?= $adminBasePath ?>/certificates" class="quick-chip info">
+            <i class="fas fa-certificate me-2"></i>Duyệt chứng nhận
+        </a>
+        <a href="<?= $adminBasePath ?>/teaching-shifts/admin" class="quick-chip warning">
+            <i class="fas fa-calendar-alt me-2"></i>Lịch ca dạy
+        </a>
+    </div>
+</div>
+
 <!-- Admin Stats Grid -->
 <div class="stats-grid slide-up">
     <div class="stat-card primary">
@@ -89,7 +114,7 @@ ob_start();
 </div>
 
 <!-- Admin Action Grid -->
-<div class="action-section slide-up" style="animation-delay: 0.2s;">
+<div class="action-section slide-up" style="animation-delay: 0.2s;" hidden>
     <div class="section-header mb-4">
         <h3 class="section-title">
             <i class="fas fa-tools me-2"></i>
@@ -197,13 +222,18 @@ ob_start();
 <div class="row g-4 slide-up" style="animation-delay: 0.4s;">
     <!-- Recent Reports Table -->
     <div class="col-lg-8">
-        <div class="data-table">
-            <div class="table-header">
-                <h3 class="table-title">Báo cáo gần đây của nhân viên</h3>
-                <p class="table-subtitle">Tổng quan hoạt động báo cáo từ tất cả nhân viên</p>
+        <div class="data-table compact-table" id="recentReportsCard">
+            <div class="table-header d-flex align-items-start justify-content-between">
+                <div>
+                    <h3 class="table-title mb-1">Báo cáo gần đây của nhân viên</h3>
+                    <p class="table-subtitle mb-0">Tổng quan hoạt động báo cáo từ tất cả nhân viên</p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleRecentReports()" aria-expanded="true" id="recentReportsToggle">
+                    Thu gọn
+                </button>
             </div>
             
-            <div class="table-content">
+            <div class="table-content" id="recentReportsContent">
                 <?php if (!empty($recent_reports)): ?>
                     <table class="modern-table">
                         <thead>
@@ -304,29 +334,6 @@ ob_start();
                     </div>
                 </div>
             </div>
-
-            <!-- Quick Links -->
-            <div class="col-12">
-                <div class="data-table">
-                    <div class="table-header">
-                        <h4 class="table-title">Truy cập nhanh</h4>
-                    </div>
-                    <div class="quick-actions p-3">
-                        <a href="<?= $adminBasePath ?>/reports" class="quick-action-btn primary text-decoration-none">
-                            <i class="fas fa-chart-bar me-2"></i>Xem tất cả báo cáo
-                        </a>
-                        <a href="<?= $adminBasePath ?>/revenue" class="quick-action-btn success text-decoration-none">
-                            <i class="fas fa-money-bill-wave me-2"></i>Xem doanh thu
-                        </a>
-                        <a href="<?= $adminBasePath ?>/certificates" class="quick-action-btn info text-decoration-none">
-                            <i class="fas fa-certificate me-2"></i>Duyệt chứng nhận
-                        </a>
-                        <a href="<?= $adminBasePath ?>/teaching-shifts/admin" class="quick-action-btn warning text-decoration-none">
-                            <i class="fas fa-calendar-alt me-2"></i>Lịch ca dạy
-                        </a>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -335,6 +342,16 @@ ob_start();
 // Admin Dashboard Functions
 function viewDetailedReport(reportDate) {
     window.location.href = '<?= $adminBasePath ?>/reports';
+}
+
+function toggleRecentReports() {
+    const content = document.getElementById('recentReportsContent');
+    const card = document.getElementById('recentReportsCard');
+    const toggle = document.getElementById('recentReportsToggle');
+    const isHidden = content.classList.toggle('collapsed');
+    card.classList.toggle('compact-collapsed', isHidden);
+    toggle.innerText = isHidden ? 'Mở rộng' : 'Thu gọn';
+    toggle.setAttribute('aria-expanded', !isHidden);
 }
 </script>
 
@@ -380,37 +397,97 @@ function viewDetailedReport(reportDate) {
     color: var(--gray-600);
 }
 
-.quick-actions {
+.compact-table .modern-table td,
+.compact-table .modern-table th {
+    padding: 0.55rem 0.6rem;
+}
+
+.compact-table .table-header {
+    padding: 0.85rem 1rem;
+}
+
+.compact-table .table-subtitle {
+    font-size: 0.9rem;
+}
+
+#recentReportsContent.collapsed {
+    display: none;
+}
+
+.compact-collapsed {
+    box-shadow: var(--shadow-sm);
+}
+
+.quick-access-row {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+}
+
+.quick-access-header {
+    min-width: 220px;
+}
+
+.quick-access-buttons {
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.75rem;
 }
 
-.quick-action-btn {
-    display: block;
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--gray-300);
-    border-radius: var(--radius-base);
-    background: white;
-    color: var(--gray-700);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
+.quick-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 0.95rem;
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    color: var(--gray-800);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
     transition: all var(--transition-base);
-    text-align: left;
+    box-shadow: var(--shadow-xs);
 }
 
-.quick-action-btn:hover {
+.quick-chip:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
     text-decoration: none;
 }
 
-.quick-action-btn.primary:hover { border-color: var(--primary-300); background: var(--primary-50); color: var(--primary-700); }
-.quick-action-btn.success:hover { border-color: var(--success-300); background: var(--success-50); color: var(--success-700); }
-.quick-action-btn.info:hover { border-color: var(--info-300); background: var(--info-50); color: var(--info-700); }
-.quick-action-btn.warning:hover { border-color: var(--warning-300); background: var(--warning-50); color: var(--warning-700); }
+.quick-chip.primary { border-color: var(--primary-200); background: var(--primary-50); color: var(--primary-700); }
+.quick-chip.success { border-color: var(--success-200); background: var(--success-50); color: var(--success-700); }
+.quick-chip.info { border-color: var(--info-200); background: var(--info-50); color: var(--info-700); }
+.quick-chip.warning { border-color: var(--warning-200); background: var(--warning-50); color: var(--warning-700); }
+
+@media (max-width: 992px) {
+    .quick-access-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .quick-access-buttons {
+        width: 100%;
+    }
+    .quick-chip {
+        width: calc(50% - 0.4rem);
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .quick-chip {
+        width: 100%;
+    }
+}
 
 @media (max-width: 768px) {
     .admin-grid {
