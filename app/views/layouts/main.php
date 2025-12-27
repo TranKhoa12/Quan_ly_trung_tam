@@ -403,6 +403,13 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                                 <span class="badge bg-light text-dark ms-auto">Ca dạy</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'staff_shift_stats' ? 'active' : '' ?>"
+                               href="/Quan_ly_trung_tam/public/staff/shift-stats">
+                                <i class="fas fa-chart-line me-2"></i> Thống kê ca dạy
+                                <span class="badge bg-info ms-auto">Mới</span>
+                            </a>
+                        </li>
                         
                         <!-- Xem thông tin (chỉ đọc) -->
                         <li class="nav-item mt-3">

@@ -148,6 +148,10 @@ $router->post('/teaching-shifts/{id}/cancel', 'TeachingShift@cancel');
 $router->post('/teaching-shifts/{id}/status', 'TeachingShift@updateStatus');
 $router->post('/teaching-shifts/{id}/delete', 'TeachingShift@delete');
 
+// Staff shift statistics routes
+$router->get('/staff/shift-stats', 'StaffShiftStats@index');
+$router->get('/staff/shift-stats/export', 'StaffShiftStats@exportExcel');
+
 // Staff management routes (Admin only)
 $router->get('/staff', 'Staff@index');
 $router->get('/staff/create', 'Staff@create');

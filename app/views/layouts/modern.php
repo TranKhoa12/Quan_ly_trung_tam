@@ -55,6 +55,7 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         if (strpos($currentPath, '/revenue') !== false) return 'revenue';
         if (strpos($currentPath, '/certificates') !== false) return 'certificates';
         if (strpos($currentPath, '/completion-slips') !== false) return 'completion_slips';
+        if (strpos($currentPath, '/staff/shift-stats') !== false) return 'staff_shift_stats';
         if (strpos($currentPath, '/teaching-shifts/transfers') !== false) return 'teaching_shifts_transfers';
         if (strpos($currentPath, '/teaching-shifts/payroll') !== false) return 'teaching_shifts_payroll';
         if (strpos($currentPath, '/teaching-shifts/admin') !== false) return 'teaching_shifts_admin';
@@ -128,6 +129,13 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         <a href="<?= $buildUrl('teaching-shifts') ?>" class="nav-link <?= isActive('teaching_shifts') ?>">
                             <i class="fas fa-chalkboard-teacher"></i>
                             <span>Lịch dạy</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('staff/shift-stats') ?>" class="nav-link <?= isActive('staff_shift_stats') ?>">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Thống kê ca dạy</span>
+                            <span class="badge badge-info ms-auto">Mới</span>
                         </a>
                     </div>
                 </div>
