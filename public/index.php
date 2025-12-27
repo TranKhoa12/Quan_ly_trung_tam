@@ -174,6 +174,13 @@ $router->get('/courses/{id}/edit', 'Course@edit');
 $router->put('/courses/{id}/update', 'Course@update');
 $router->delete('/courses/{id}/delete', 'Course@delete');
 
+// Admin Logs routes (Admin only)
+$router->get('/admin-logs', 'AdminLog@index');
+$router->get('/admin-logs/detail/{id}', 'AdminLog@detail');
+$router->get('/admin-logs/export', 'AdminLog@export');
+$router->post('/admin-logs/delete-old', 'AdminLog@deleteOld');
+$router->get('/admin-logs/statistics', 'AdminLog@statistics');
+
 // OCR route
 $router->post('/ocr', 'OCR@processImage');
 

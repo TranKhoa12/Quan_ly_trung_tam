@@ -1,20 +1,32 @@
 <?php
 // Modern Layout Wrapper - Redirects to modern layout
-function useModernLayout($pageTitle, $content) {
-    // Compute base path
-    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-    $scriptDir = str_replace('\\', '/', dirname($scriptName));
-    $appBasePath = rtrim($scriptDir, '/');
-    if ($appBasePath === '' || $appBasePath === '.') {
-        $appBasePath = '';
-    }
-
-    $buildUrl = function (string $path = '') use ($appBasePath): string {
+// Global buildUrl helper (available to all views)
+if (!function_exists('buildUrl')) {
+    function buildUrl(string $path = ''): string {
+        static $basePath = null;
+        if ($basePath === null) {
+            $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+            $scriptDir = str_replace('\\', '/', dirname($scriptName));
+            $basePath = rtrim($scriptDir, '/');
+            if ($basePath === '' || $basePath === '.') {
+                $basePath = '';
+            }
+        }
         $normalized = '/' . ltrim($path, '/');
-        return ($appBasePath ? $appBasePath : '') . $normalized;
-    };
+        return ($basePath ? $basePath : '') . $normalized;
+    }
+}
 
-    $appBasePathString = $appBasePath ? $appBasePath : '';
+function useModernLayout($pageTitle, $content) {
+    $appBasePathString = buildUrl('');
+    $buildUrl = fn(string $path = '') => buildUrl($path);
+
+    // Render closure content to string if needed
+    if (is_callable($content)) {
+        ob_start();
+        $content();
+        $content = ob_get_clean();
+    }
     
     // Include modern layout
     include __DIR__ . '/modern.php';
@@ -491,6 +503,12 @@ function renderLayout($title, $content, $activePage = '', $customCss = '', $cust
                             <a class="nav-link <?= $activePage === 'shift_payroll' ? 'active' : '' ?>" 
                                href="/Quan_ly_trung_tam/public/teaching-shifts/payroll">
                                 <i class="fas fa-money-check-alt me-2"></i> Bảng lương ca dạy
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $activePage === 'admin_logs' ? 'active' : '' ?>" 
+                               href="/Quan_ly_trung_tam/public/admin-logs">
+                                <i class="fas fa-history me-2"></i> Nhật ký hoạt động
                             </a>
                         </li>
                         <li class="nav-item">

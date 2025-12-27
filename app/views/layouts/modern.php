@@ -60,6 +60,7 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         if (strpos($currentPath, '/teaching-shifts/payroll') !== false) return 'teaching_shifts_payroll';
         if (strpos($currentPath, '/teaching-shifts/admin') !== false) return 'teaching_shifts_admin';
         if (strpos($currentPath, '/teaching-shifts') !== false) return 'teaching_shifts';
+        if (strpos($currentPath, '/admin-logs') !== false) return 'admin_logs';
         if (strpos($currentPath, '/staff') !== false) return 'staff';
         return 'dashboard';
     }
@@ -177,6 +178,12 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         <a href="<?= $buildUrl('teaching-shifts/transfers/list') ?>" class="nav-link <?= isActive('teaching_shifts_transfers') ?>">
                             <i class="fas fa-exchange-alt"></i>
                             <span>Yêu cầu chuyển ca</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('admin-logs') ?>" class="nav-link <?= isActive('admin_logs') ?>">
+                            <i class="fas fa-history"></i>
+                            <span>Nhật ký hoạt động</span>
                         </a>
                     </div>
                 </div>

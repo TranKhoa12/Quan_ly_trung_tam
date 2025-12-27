@@ -78,7 +78,7 @@ class Router {
         
         foreach ($allRoutes as $route) {
             if ($this->matchRoute($route, $requestMethod, $cleanUri)) {
-                return $this->executeRoute($route, $cleanUri);
+                return $this->executeRoute($route, $cleanUri, $requestMethod);
             }
         }
         
@@ -106,7 +106,7 @@ class Router {
         return preg_match($pattern, $uri);
     }
     
-    private function executeRoute($route, $uri) {
+    private function executeRoute($route, $uri, $requestMethod) {
         // Extract parameters
         $pattern = preg_replace('/\{([^}]+)\}/', '([^/]+)', $route['uri']);
         $pattern = '#^' . $pattern . '$#';
@@ -124,6 +124,10 @@ class Router {
             // Check if it's an API route
             if (strpos($route['uri'], '/api') === 0) {
                 header('Content-Type: application/json');
+            }
+
+            if (class_exists('ActivityLogger')) {
+                ActivityLogger::logCurrentRequest($route, $uri, $requestMethod, $parameters);
             }
             
             return call_user_func_array([$controller, $method], $parameters);

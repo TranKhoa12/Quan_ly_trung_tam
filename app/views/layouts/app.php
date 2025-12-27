@@ -159,6 +159,12 @@
                                 <span class="nav-text">Quản lý nhân viên</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="/admin-logs" class="nav-link <?= isActiveNav('admin-logs') ?>">
+                                <i class="nav-icon fas fa-history"></i>
+                                <span class="nav-text">Nhật ký hoạt động</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 <?php endif; ?>

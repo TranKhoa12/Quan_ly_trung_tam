@@ -1,5 +1,9 @@
 <?php
 
+require_once __DIR__ . '/../helpers/AdminLogger.php';
+
+use App\Helpers\AdminLogger;
+
 class AuthController extends BaseController
 {
     private $passwordResetModel;
@@ -50,8 +54,16 @@ class AuthController extends BaseController
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['role'] = $user['role'];
             
+            // Ghi log đăng nhập thành công
+            $logger = new AdminLogger($this->db->getConnection(), $user['id'], $user['username']);
+            $logger->logLogin(true);
+            
             $this->redirect('/Quan_ly_trung_tam/public/dashboard');
         } else {
+            // Ghi log đăng nhập thất bại
+            $logger = new AdminLogger($this->db->getConnection(), null, $username);
+            $logger->logLogin(false);
+            
             $error = 'Tên đăng nhập hoặc mật khẩu không đúng';
             $this->view('auth/login', ['error' => $error]);
         }
@@ -59,6 +71,12 @@ class AuthController extends BaseController
 
     public function logout()
     {
+        // Ghi log đăng xuất trước khi destroy session
+        if (isset($_SESSION['user_id']) && isset($_SESSION['username'])) {
+            $logger = new AdminLogger($this->db->getConnection(), $_SESSION['user_id'], $_SESSION['username']);
+            $logger->logLogout();
+        }
+        
         session_destroy();
         $this->redirect('/Quan_ly_trung_tam/public/login');
     }
