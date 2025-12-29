@@ -59,45 +59,79 @@
             color: #212529;
         }
         
-        .shifts-table {
-            margin: 20px 0;
-        }
-        
-        .shifts-table th {
-            background: #4f46e5;
-            color: white;
-            padding: 12px;
-        }
-        
-        .shifts-table td {
-            padding: 10px;
-        }
-        
-        .total-section {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-        
         .total-amount {
             font-size: 32px;
             font-weight: bold;
             text-align: center;
         }
-        
+
         .signature-section {
             margin-top: 40px;
             display: flex;
             justify-content: space-between;
         }
-        
+
         .signature-box {
             text-align: center;
             width: 45%;
         }
+
+        .summary-box {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .summary-row:last-child { margin-bottom: 0; }
+
+        .summary-row.net-highlight {
+            background: #ecfdf3;
+            color: #0f5132;
+            padding: 10px 12px;
+            border: 1px solid #a7f3d0;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);
+        }
         
+        .signature-box {
+
+        .summary-box {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .summary-row:last-child { margin-bottom: 0; }
+            text-align: center;
+            width: 45%;
+        }
+        
+        <?php
+            $gross = (float)($payroll['total_amount'] ?? 0);
+            $taxRate = (float)($payroll['tax_rate'] ?? 0.10);
+            $taxAmount = isset($payroll['tax_amount']) ? (float)$payroll['tax_amount'] : round($gross * $taxRate);
+            $netAmount = isset($payroll['net_amount']) ? (float)$payroll['net_amount'] : ($gross - $taxAmount);
+        ?>
+
         .signature-line {
             border-top: 1px solid #dee2e6;
             margin-top: 60px;
@@ -201,10 +235,26 @@
                 <tr class="fw-bold">
                     <td colspan="5" class="text-end">TỔNG CỘNG:</td>
                     <td class="text-end"><?= number_format($payroll['total_hours'], 1) ?>h</td>
-                    <td class="text-end"><?= number_format($totalAmount, 0, ',', '.') ?> ₫</td>
+                    <td class="text-end"><?= number_format($gross, 0, ',', '.') ?> ₫</td>
                 </tr>
             </tfoot>
         </table>
+
+        <!-- Summary Gross / Tax / Net -->
+        <div class="summary-box">
+            <div class="summary-row">
+                <span>Thành tiền (gross)</span>
+                <span><?= number_format($gross, 0, ',', '.') ?> ₫</span>
+            </div>
+            <div class="summary-row">
+                <span>Thuế tạm khấu trừ (<?= number_format($taxRate * 100, 0) ?>%)</span>
+                <span><?= number_format($taxAmount, 0, ',', '.') ?> ₫</span>
+            </div>
+            <div class="summary-row net-highlight">
+                <span>Thực nhận (net)</span>
+                <span><?= number_format($netAmount, 0, ',', '.') ?> ₫</span>
+            </div>
+        </div>
 
         <div class="text-center mt-4 text-muted">
             <small>--- HẾT ---</small>

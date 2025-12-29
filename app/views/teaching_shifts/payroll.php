@@ -20,6 +20,9 @@ ob_start();
         <a href="' . $basePath . '/teaching-shifts/payroll/report" class="btn btn-outline-info">
             <i class="fas fa-chart-bar me-2"></i>Báo cáo thống kê
         </a>
+        <a href="' . $basePath . '/teaching-shifts/tax-report" class="btn btn-outline-warning">
+            <i class="fas fa-file-invoice-dollar me-2"></i>Báo cáo thuế 10%
+        </a>
         <a href="' . $basePath . '/teaching-shifts/admin" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>Quay lại
         </a>
@@ -252,6 +255,8 @@ ob_start();
             $totalStaff = count($report);
             $totalHoursSum = array_sum(array_column($report, 'total_hours'));
             $totalAmountSum = array_sum(array_column($report, 'total_amount'));
+            $totalTaxSum = isset($totalTax) ? $totalTax : array_sum(array_column($report, 'tax_amount'));
+            $totalNetSum = isset($totalNet) ? $totalNet : array_sum(array_column($report, 'net_amount'));
             $totalShiftsSum = array_sum(array_map(function($r) { return (int)($r['total_shifts'] ?? 0); }, $report));
         ?>
         <div class="row g-3 mb-4">
@@ -265,7 +270,13 @@ ob_start();
                 <?= statsCard('fas fa-clock', 'Tổng giờ dạy', number_format($totalHoursSum, 1) . 'h', 'Tổng số giờ', 'info') ?>
             </div>
             <div class="col-xl-3 col-md-6">
-                <?= statsCard('fas fa-money-bill-wave', 'Tổng chi phí', number_format($totalAmountSum, 0, ',', '.') . ' đ', 'Đồng Việt Nam', 'success') ?>
+                <?= statsCard('fas fa-money-bill-wave', 'Tổng chi phí (gross)', number_format($totalAmountSum, 0, ',', '.') . ' đ', 'Trước thuế', 'success') ?>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <?= statsCard('fas fa-percent', 'Thuế tạm khấu trừ (10%)', number_format($totalTaxSum, 0, ',', '.') . ' đ', 'Áp dụng cho part-time', 'secondary') ?>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <?= statsCard('fas fa-hand-holding-usd', 'Thực nhận (net)', number_format($totalNetSum, 0, ',', '.') . ' đ', 'Sau thuế', 'primary') ?>
             </div>
         </div>
     <?php endif; ?>
@@ -281,7 +292,7 @@ ob_start();
                     </h6>
                     <p class="mb-0 small text-muted">
                         <i class="fas fa-info-circle me-1"></i>
-                        Chỉ bao gồm các ca đã được duyệt
+                        Chỉ bao gồm các ca đã được duyệt. Tính thuế tạm khấu trừ 10% cho nhân sự part-time.
                     </p>
                 </div>
                 <div class="d-flex gap-2">
@@ -333,7 +344,9 @@ ob_start();
                                 <th class="border-0">Nhân viên</th>
                                 <th class="border-0 text-center">Số ca</th>
                                 <th class="border-0 text-center">Số giờ</th>
-                                <th class="border-0 text-end">Thành tiền</th>
+                                <th class="border-0 text-end">Thành tiền (gross)</th>
+                                <th class="border-0 text-end">Thuế 10%</th>
+                                <th class="border-0 text-end">Thực nhận</th>
                                 <th class="border-0 text-center">Trạng thái</th>
                                 <th class="border-0 text-center" style="width: 120px;">Thao tác</th>
                             </tr>
@@ -345,6 +358,8 @@ ob_start();
                                     $stored = $storedPayroll[$row['staff_id']] ?? null;
                                     $totalHours = (float)$row['total_hours'];
                                     $totalAmount = (float)$row['total_amount'];
+                                    $taxAmount = (float)($row['tax_amount'] ?? 0);
+                                    $netAmount = (float)($row['net_amount'] ?? ($totalAmount - $taxAmount));
                                     $totalShifts = (int)($row['total_shifts'] ?? 0);
                                     
                                     // Get initials for avatar
@@ -374,6 +389,12 @@ ob_start();
                                     </td>
                                     <td class="text-end">
                                         <span class="amount-display-payroll"><?= number_format($totalAmount, 0, ',', '.') ?> ₫</span>
+                                    </td>
+                                    <td class="text-end text-danger">
+                                        <?= number_format($taxAmount, 0, ',', '.') ?> ₫
+                                    </td>
+                                    <td class="text-end text-success fw-semibold">
+                                        <?= number_format($netAmount, 0, ',', '.') ?> ₫
                                     </td>
                                     <td class="text-center">
                                         <?php if ($stored && $stored['status'] === 'active'): ?>
@@ -440,8 +461,14 @@ ob_start();
                                     <span class="badge bg-primary"><?= $totalShiftsSum ?> ca</span>
                                 </td>
                                 <td class="text-center text-primary"><?= number_format($totalHoursSum, 1) ?>h</td>
-                                <td class="text-end text-success fs-5">
+                                <td class="text-end text-success fs-6 fw-semibold">
                                     <?= number_format($totalAmountSum, 0, ',', '.') ?> ₫
+                                </td>
+                                <td class="text-end text-danger fw-semibold">
+                                    <?= number_format($totalTaxSum, 0, ',', '.') ?> ₫
+                                </td>
+                                <td class="text-end text-success fs-5 fw-bold">
+                                    <?= number_format($totalNetSum, 0, ',', '.') ?> ₫
                                 </td>
                                 <td></td>
                                 <td></td>

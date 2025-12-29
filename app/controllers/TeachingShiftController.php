@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/TeachingShift.php';
 require_once __DIR__ . '/../models/ShiftRegistration.php';
 require_once __DIR__ . '/../models/ShiftPayroll.php';
+require_once __DIR__ . '/../models/TaxWithholdingLedger.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/ShiftTransfer.php';
 require_once __DIR__ . '/../models/ShiftTransferLog.php';
@@ -12,6 +13,7 @@ class TeachingShiftController extends BaseController
     private $shiftModel;
     private $registrationModel;
     private $payrollModel;
+    private $taxLedgerModel;
     private $userModel;
     private $transferModel;
     private $transferLogModel;
@@ -23,6 +25,7 @@ class TeachingShiftController extends BaseController
         $this->shiftModel = new TeachingShift();
         $this->registrationModel = new ShiftRegistration();
         $this->payrollModel = new ShiftPayroll();
+        $this->taxLedgerModel = new TaxWithholdingLedger();
         $this->userModel = new User();
         $this->transferModel = new ShiftTransfer();
         $this->transferLogModel = new ShiftTransferLog();
@@ -283,6 +286,10 @@ class TeachingShiftController extends BaseController
         $periodStart = date('Y-m-01', strtotime($month . '-01'));
         $periodEnd = date('Y-m-t', strtotime($periodStart));
 
+        $taxRate = 0.10; // Tạm khấu trừ 10% cho part-time
+        $totalTax = 0;
+        $totalNet = 0;
+
         $report = $this->registrationModel->aggregateHours($periodStart, $periodEnd);
         $storedPayroll = $this->payrollModel->getByPeriod($periodStart, $periodEnd);
         $storedIndexed = [];
@@ -290,12 +297,37 @@ class TeachingShiftController extends BaseController
             $storedIndexed[$row['staff_id']] = $row;
         }
 
+        // Bổ sung thông tin thuế và thực nhận
+        foreach ($report as &$row) {
+            $stored = $storedIndexed[$row['staff_id']] ?? null;
+            $gross = (float)($row['total_amount'] ?? 0);
+
+            if ($stored) {
+                $tax = (float)($stored['tax_amount'] ?? 0);
+                $net = (float)($stored['net_amount'] ?? ($gross - $tax));
+                $row['tax_rate'] = (float)($stored['tax_rate'] ?? $taxRate);
+            } else {
+                $tax = round($gross * $taxRate);
+                $net = $gross - $tax;
+                $row['tax_rate'] = $taxRate;
+            }
+
+            $row['tax_amount'] = $tax;
+            $row['net_amount'] = $net;
+            $totalTax += $tax;
+            $totalNet += $net;
+        }
+        unset($row);
+
         $this->view('teaching_shifts/payroll', [
             'month' => $month,
             'periodStart' => $periodStart,
             'periodEnd' => $periodEnd,
             'report' => $report,
-            'storedPayroll' => $storedIndexed
+            'storedPayroll' => $storedIndexed,
+            'taxRate' => $taxRate,
+            'totalTax' => $totalTax,
+            'totalNet' => $totalNet
         ]);
     }
 
@@ -306,6 +338,7 @@ class TeachingShiftController extends BaseController
         $periodStart = date('Y-m-01', strtotime($month . '-01'));
         $periodEnd = date('Y-m-t', strtotime($periodStart));
         $generatedBy = $this->getUser()['id'];
+        $taxRate = 0.10;
 
         $report = $this->registrationModel->aggregateHours($periodStart, $periodEnd);
         if (empty($report)) {
@@ -317,7 +350,10 @@ class TeachingShiftController extends BaseController
         foreach ($report as $row) {
             $hours = (float)($row['total_hours'] ?? 0);
             $amount = (float)($row['total_amount'] ?? 0);
-            $this->payrollModel->upsertPayroll($row['staff_id'], $periodStart, $periodEnd, $hours, $amount, $generatedBy);
+            $payrollId = $this->payrollModel->upsertPayroll($row['staff_id'], $periodStart, $periodEnd, $hours, $amount, $generatedBy, $taxRate);
+            $taxAmount = round($amount * $taxRate);
+            $netAmount = $amount - $taxAmount;
+            $this->taxLedgerModel->upsertLedger($payrollId, $row['staff_id'], $periodStart, $periodEnd, $amount, $taxRate, $taxAmount, $netAmount);
         }
 
         $_SESSION['success'] = 'Đã lưu bảng lương ca dạy cho tháng ' . date('m/Y', strtotime($periodStart)) . '.';
@@ -341,6 +377,7 @@ class TeachingShiftController extends BaseController
 
         // Cancel all active payroll records for this period
         $this->payrollModel->cancelByPeriod($periodStart, $periodEnd);
+        $this->taxLedgerModel->cancelByPeriod($periodStart, $periodEnd);
         
         $_SESSION['success'] = 'Đã hủy bảng lương tháng ' . date('m/Y', strtotime($periodStart)) . ' thành công.';
         $this->redirect('/Quan_ly_trung_tam/public/teaching-shifts/payroll?month=' . $month);
@@ -353,6 +390,7 @@ class TeachingShiftController extends BaseController
         $staffId = $_POST['staff_id'] ?? null;
         $totalHours = (float)($_POST['total_hours'] ?? 0);
         $totalAmount = (float)($_POST['total_amount'] ?? 0);
+        $taxRate = 0.10;
         
         $periodStart = date('Y-m-01', strtotime($month . '-01'));
         $periodEnd = date('Y-m-t', strtotime($periodStart));
@@ -364,7 +402,10 @@ class TeachingShiftController extends BaseController
             return;
         }
 
-        $this->payrollModel->upsertPayroll($staffId, $periodStart, $periodEnd, $totalHours, $totalAmount, $generatedBy);
+        $payrollId = $this->payrollModel->upsertPayroll($staffId, $periodStart, $periodEnd, $totalHours, $totalAmount, $generatedBy, $taxRate);
+        $taxAmount = round($totalAmount * $taxRate);
+        $netAmount = $totalAmount - $taxAmount;
+        $this->taxLedgerModel->upsertLedger($payrollId, $staffId, $periodStart, $periodEnd, $totalAmount, $taxRate, $taxAmount, $netAmount);
         
         $_SESSION['success'] = 'Đã lưu bảng lương cho nhân viên thành công.';
         $this->redirect('/Quan_ly_trung_tam/public/teaching-shifts/payroll?month=' . $month);
@@ -389,6 +430,7 @@ class TeachingShiftController extends BaseController
         $existing = $this->payrollModel->findByPeriod($staffId, $periodStart, $periodEnd);
         if ($existing) {
             $this->payrollModel->update($existing['id'], ['status' => 'cancelled']);
+            $this->taxLedgerModel->cancelStaff($staffId, $periodStart, $periodEnd);
             $_SESSION['success'] = 'Đã hủy bảng lương cho nhân viên.';
         } else {
             $_SESSION['error'] = 'Không tìm thấy bảng lương cho nhân viên này.';
@@ -507,6 +549,118 @@ class TeachingShiftController extends BaseController
             'topStaff' => $topStaff,
             'currentMonth' => date('m/Y')
         ]);
+    }
+
+    public function taxReport()
+    {
+        $this->requireAdmin();
+        $year = $_GET['year'] ?? date('Y');
+        $month = $_GET['month'] ?? '';
+
+        $year = preg_replace('/[^0-9]/', '', $year);
+        if (strlen($year) !== 4) {
+            $year = date('Y');
+        }
+
+        $monthlySummary = [];
+        $yearTotals = $this->taxLedgerModel->getYearTotals($year) ?? [
+            'gross_sum' => 0,
+            'tax_sum' => 0,
+            'net_sum' => 0,
+            'staff_count' => 0,
+            'periods' => 0
+        ];
+
+        $monthDetails = [];
+        $monthTotals = null;
+
+        if (!empty($month)) {
+            // Expect format YYYY-MM
+            if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+                $_SESSION['error'] = 'Tháng không hợp lệ';
+                $this->redirect('/Quan_ly_trung_tam/public/teaching-shifts/tax-report?year=' . $year);
+                return;
+            }
+            $periodStart = date('Y-m-01', strtotime($month . '-01'));
+            $periodEnd = date('Y-m-t', strtotime($periodStart));
+            $monthDetails = $this->taxLedgerModel->getMonthStaffDetail($periodStart, $periodEnd) ?? [];
+            $monthTotals = [
+                'gross_sum' => array_sum(array_column($monthDetails, 'gross_sum')),
+                'tax_sum' => array_sum(array_column($monthDetails, 'tax_sum')),
+                'net_sum' => array_sum(array_column($monthDetails, 'net_sum')),
+                'staff_count' => count($monthDetails)
+            ];
+        } else {
+            $monthlySummary = $this->taxLedgerModel->getMonthlySummary($year) ?? [];
+        }
+
+        $this->view('teaching_shifts/tax_report', [
+            'year' => $year,
+            'month' => $month,
+            'monthlySummary' => $monthlySummary,
+            'yearTotals' => $yearTotals,
+            'monthDetails' => $monthDetails,
+            'monthTotals' => $monthTotals
+        ]);
+    }
+
+    public function exportTaxReport()
+    {
+        $this->requireAdmin();
+        $year = $_GET['year'] ?? date('Y');
+        $month = $_GET['month'] ?? '';
+
+        $year = preg_replace('/[^0-9]/', '', $year);
+        if (strlen($year) !== 4) {
+            $year = date('Y');
+        }
+
+        if (!empty($month)) {
+            if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+                $_SESSION['error'] = 'Tháng không hợp lệ';
+                $this->redirect('/Quan_ly_trung_tam/public/teaching-shifts/tax-report?year=' . $year);
+                return;
+            }
+            $periodStart = date('Y-m-01', strtotime($month . '-01'));
+            $periodEnd = date('Y-m-t', strtotime($periodStart));
+            $rows = $this->taxLedgerModel->getMonthStaffDetail($periodStart, $periodEnd) ?? [];
+
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="tax-report-' . $month . '.csv"');
+            echo "\xEF\xBB\xBF"; // UTF-8 BOM for Excel
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Tháng', 'Nhân viên', 'Gross', 'Thuế', 'Net']);
+            foreach ($rows as $row) {
+                fputcsv($out, [
+                    $month,
+                    $row['full_name'],
+                    $row['gross_sum'],
+                    $row['tax_sum'],
+                    $row['net_sum']
+                ]);
+            }
+            fclose($out);
+            exit;
+        }
+
+        // Export year summary
+        $rows = $this->taxLedgerModel->getMonthlySummary($year) ?? [];
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="tax-report-' . $year . '.csv"');
+        echo "\xEF\xBB\xBF";
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Tháng', 'Gross', 'Thuế', 'Net', 'Số NV']);
+        foreach ($rows as $row) {
+            fputcsv($out, [
+                $row['month_key'],
+                $row['gross_sum'],
+                $row['tax_sum'],
+                $row['net_sum'],
+                $row['staff_count']
+            ]);
+        }
+        fclose($out);
+        exit;
     }
 
     public function delete($id)

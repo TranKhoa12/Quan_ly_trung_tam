@@ -10,20 +10,28 @@ class ShiftPayroll extends BaseModel
         'period_end',
         'total_hours',
         'total_amount',
+        'tax_rate',
+        'tax_amount',
+        'net_amount',
         'notes',
         'generated_by',
         'status'
     ];
 
-    public function upsertPayroll($staffId, $periodStart, $periodEnd, $hours, $amount, $generatedBy)
+    public function upsertPayroll($staffId, $periodStart, $periodEnd, $hours, $grossAmount, $generatedBy, $taxRate = 0.10)
     {
         $existing = $this->findByPeriod($staffId, $periodStart, $periodEnd);
+        $taxAmount = round($grossAmount * $taxRate);
+        $netAmount = $grossAmount - $taxAmount;
         $data = [
             'staff_id' => $staffId,
             'period_start' => $periodStart,
             'period_end' => $periodEnd,
             'total_hours' => $hours,
-            'total_amount' => $amount,
+            'total_amount' => $grossAmount,
+            'tax_rate' => $taxRate,
+            'tax_amount' => $taxAmount,
+            'net_amount' => $netAmount,
             'generated_by' => $generatedBy,
             'status' => 'active'
         ];

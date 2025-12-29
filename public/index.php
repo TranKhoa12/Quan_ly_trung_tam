@@ -133,6 +133,8 @@ $router->post('/teaching-shifts/payroll/cancel', 'TeachingShift@cancelPayroll');
 $router->post('/teaching-shifts/payroll/save-staff', 'TeachingShift@saveStaffPayroll');
 $router->post('/teaching-shifts/payroll/cancel-staff', 'TeachingShift@cancelStaffPayroll');
 $router->get('/teaching-shifts/payroll/print', 'TeachingShift@printPayslip');
+$router->get('/teaching-shifts/tax-report', 'TeachingShift@taxReport');
+$router->get('/teaching-shifts/tax-report/export', 'TeachingShift@exportTaxReport');
 $router->get('/teaching-shifts/transfer/{registrationId}', 'TeachingShift@transferForm');
 $router->post('/teaching-shifts/transfer/store', 'TeachingShift@transferStore');
 $router->get('/teaching-shifts/transfers/my', 'TeachingShift@myTransfers');
