@@ -55,6 +55,8 @@ $router->post('/profile/update', 'Profile@update');
 // Reports routes
 $router->get('/reports', 'Report@index');
 $router->get('/reports/create', 'Report@create');
+$router->get('/reports/daily-closing', 'Report@dailyClosingReport');
+$router->get('/reports/transfer-closing', 'Report@transferClosingReport');
 $router->post('/reports', 'Report@store');
 $router->post('/reports/delete-multiple', 'Report@deleteMultiple');
 $router->get('/reports/{id}', 'Report@show');

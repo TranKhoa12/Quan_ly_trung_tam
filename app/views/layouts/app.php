@@ -33,6 +33,8 @@
         if (strpos($uri, '/dashboard') !== false) return 'Dashboard';
         if (strpos($uri, '/students') !== false) return 'Quản lý học viên';
         if (strpos($uri, '/courses') !== false) return 'Quản lý khóa học';
+        if (strpos($uri, '/reports/transfer-closing') !== false) return 'Báo cáo chuyển khoản';
+        if (strpos($uri, '/reports/daily-closing') !== false) return 'Báo cáo chốt';
         if (strpos($uri, '/reports') !== false) return 'Báo cáo học viên';
         if (strpos($uri, '/revenue') !== false) return 'Báo cáo doanh thu';
         if (strpos($uri, '/certificates') !== false) return 'Cấp chứng nhận';
@@ -45,6 +47,8 @@
         if (strpos($uri, '/dashboard') !== false) return 'dashboard';
         if (strpos($uri, '/students') !== false) return 'students';
         if (strpos($uri, '/courses') !== false) return 'courses';
+        if (strpos($uri, '/reports/transfer-closing') !== false) return 'transfer-closing';
+        if (strpos($uri, '/reports/daily-closing') !== false) return 'daily-closing';
         if (strpos($uri, '/reports') !== false) return 'reports';
         if (strpos($uri, '/revenue') !== false) return 'revenue';
         if (strpos($uri, '/certificates') !== false) return 'certificates';
@@ -130,6 +134,20 @@
                                 <span class="nav-text">Cấp chứng nhận</span>
                             </a>
                         </li>
+                        <?php if ($isAdmin): ?>
+                        <li class="nav-item">
+                            <a href="/reports/daily-closing" class="nav-link <?= isActiveNav('daily-closing') ?>">
+                                <i class="nav-icon fas fa-file-contract"></i>
+                                <span class="nav-text">Báo cáo chốt</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/reports/transfer-closing" class="nav-link <?= isActiveNav('transfer-closing') ?>">
+                                <i class="nav-icon fas fa-money-check-alt"></i>
+                                <span class="nav-text">Báo cáo CK</span>
+                            </a>
+                        </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
 

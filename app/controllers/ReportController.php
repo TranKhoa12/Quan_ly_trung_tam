@@ -852,6 +852,305 @@ class ReportController extends BaseController
         }
     }
 
+    /**
+     * Báo cáo chốt hàng ngày
+     */
+    public function dailyClosingReport()
+    {
+        try {
+            $user = $this->getUser();
+            
+            // Chỉ admin mới được xem báo cáo chốt
+            if ($user['role'] !== 'admin') {
+                $_SESSION['error'] = 'Bạn không có quyền truy cập chức năng này';
+                $this->redirect('/dashboard');
+                return;
+            }
+            
+            // Lấy ngày từ query string, mặc định là hôm nay
+            $date = $_GET['date'] ?? date('Y-m-d');
+            
+            // Lấy dữ liệu báo cáo học viên theo ngày
+            $studentStats = $this->getStudentReportStats($date);
+            
+            // Lấy dữ liệu báo cáo doanh thu theo ngày
+            $revenueStats = $this->getRevenueReportStats($date);
+            
+            // Format báo cáo
+            $reportText = $this->formatClosingReport($date, $studentStats, $revenueStats);
+            
+            $this->view('reports/daily_closing', [
+                'date' => $date,
+                'reportText' => $reportText,
+                'studentStats' => $studentStats,
+                'revenueStats' => $revenueStats,
+                'userRole' => $user['role']
+            ]);
+        } catch (Exception $e) {
+            $this->view('reports/daily_closing', [
+                'date' => date('Y-m-d'),
+                'reportText' => '',
+                'error' => $e->getMessage(),
+                'userRole' => $this->getUser()['role'] ?? 'staff'
+            ]);
+        }
+    }
+
+    /**
+     * Lấy thống kê báo cáo học viên theo ngày
+     */
+    private function getStudentReportStats($date)
+    {
+        $db = Database::getInstance();
+        $conn = $db->getConnection();
+        
+        // Đếm số lượng đến (tổng số khách hàng) và chốt (đã đăng ký) từ bảng report_customers
+        $sql = "SELECT 
+                    COUNT(DISTINCT rc.id) as arrivals,
+                    COUNT(DISTINCT CASE WHEN rc.registration_status = 'registered' THEN rc.id END) as closed
+                FROM report_customers rc
+                INNER JOIN reports r ON rc.report_id = r.id
+                WHERE DATE(r.report_date) = ?";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$date]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return [
+            'arrivals' => (int)$result['arrivals'],
+            'closed' => (int)$result['closed']
+        ];
+    }
+
+    /**
+     * Lấy thống kê báo cáo doanh thu theo ngày
+     */
+    private function getRevenueReportStats($date)
+    {
+        $db = Database::getInstance();
+        $conn = $db->getConnection();
+        
+        // Đếm tổng số chốt và lấy chi tiết từ bảng revenue_reports
+        $sql = "SELECT 
+                    COUNT(*) as total_count,
+                    rr.id,
+                    rr.course_id,
+                    c.course_name,
+                    rr.payment_content
+                FROM revenue_reports rr
+                LEFT JOIN courses c ON rr.course_id = c.id
+                WHERE DATE(rr.payment_date) = ?
+                GROUP BY rr.id, rr.course_id, c.course_name, rr.payment_content
+                ORDER BY rr.created_at";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$date]);
+        $details = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Đếm tổng số giao dịch
+        $countSql = "SELECT COUNT(*) as total FROM revenue_reports WHERE DATE(payment_date) = ?";
+        $countStmt = $conn->prepare($countSql);
+        $countStmt->execute([$date]);
+        $countResult = $countStmt->fetch(PDO::FETCH_ASSOC);
+        
+        return [
+            'total_count' => (int)$countResult['total'],
+            'details' => $details
+        ];
+    }
+
+    /**
+     * Format báo cáo chốt
+     */
+    private function formatClosingReport($date, $studentStats, $revenueStats)
+    {
+        // Chuyển đổi format ngày từ Y-m-d sang d/m/Y
+        $formattedDate = date('d/m/Y', strtotime($date));
+        
+        $report = "---\n";
+        $report .= "Báo cáo ngày {$formattedDate}\n";
+        $report .= "SL đến: {$studentStats['arrivals']}, SL chốt: {$studentStats['closed']}.\n";
+        $totalFormatted = ($revenueStats['total_count'] <= 0)
+            ? '0'
+            : str_pad($revenueStats['total_count'], 2, '0', STR_PAD_LEFT);
+        $report .= "Tổng Chốt: {$totalFormatted}\n";
+        
+        // Thêm chi tiết từng giao dịch
+        foreach ($revenueStats['details'] as $index => $detail) {
+            $courseName = $this->shortenCourseName($detail['course_name'] ?? '');
+            $paymentType = $this->mapPaymentContent($detail['payment_content'] ?? '');
+            
+            $report .= str_pad(($index + 1), 2, '0', STR_PAD_LEFT);
+            $report .= " {$courseName} - {$paymentType}\n";
+        }
+        
+        $report .= "---";
+        
+        return $report;
+    }
+
+    /**
+     * Báo cáo chuyển khoản từ TK Thầy Hiến theo ngày
+     */
+    public function transferClosingReport()
+    {
+        try {
+            $user = $this->getUser();
+            if ($user['role'] !== 'admin') {
+                $_SESSION['error'] = 'Bạn không có quyền truy cập chức năng này';
+                $this->redirect('/Quan_ly_trung_tam/public/dashboard');
+                return;
+            }
+
+            $date = $_GET['date'] ?? date('Y-m-d');
+            $transferStats = $this->getTransferReportStats($date);
+            $reportText = $this->formatTransferClosingReport($date, $transferStats);
+
+            $this->view('reports/transfer_closing', [
+                'date' => $date,
+                'transferStats' => $transferStats,
+                'reportText' => $reportText,
+                'userRole' => $user['role']
+            ]);
+        } catch (Exception $e) {
+            $this->view('reports/transfer_closing', [
+                'date' => date('Y-m-d'),
+                'transferStats' => ['total_count' => 0, 'total_amount' => 0, 'images' => []],
+                'reportText' => '',
+                'error' => $e->getMessage(),
+                'userRole' => $this->getUser()['role'] ?? 'staff'
+            ]);
+        }
+    }
+
+    /**
+     * Lấy thống kê chuyển khoản từ TK Thầy Hiến theo ngày
+     */
+    private function getTransferReportStats($date)
+    {
+        $db = Database::getInstance();
+        $conn = $db->getConnection();
+
+        $sql = "SELECT rr.id, rr.amount, rr.confirmation_image, rr.confirmation_images
+                FROM revenue_reports rr
+                WHERE DATE(rr.payment_date) = ? AND rr.transfer_type = 'account_thay_hien'";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$date]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $totalAmount = 0;
+        $images = [];
+
+        foreach ($rows as $row) {
+            $totalAmount += floatval($row['amount'] ?? 0);
+
+            if (!empty($row['confirmation_images'])) {
+                $decoded = json_decode($row['confirmation_images'], true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $img) {
+                        if (!empty($img)) {
+                            $images[] = $img;
+                        }
+                    }
+                }
+            }
+
+            if (!empty($row['confirmation_image'])) {
+                $images[] = $row['confirmation_image'];
+            }
+        }
+
+        $images = array_values(array_unique(array_filter($images)));
+
+        return [
+            'total_count' => count($rows),
+            'total_amount' => $totalAmount,
+            'images' => $images
+        ];
+    }
+
+    /**
+     * Format báo cáo chuyển khoản
+     */
+    private function formatTransferClosingReport($date, $transferStats)
+    {
+        $formattedDate = date('d/m/Y', strtotime($date));
+        $sl = ($transferStats['total_count'] <= 0) ? '0' : str_pad($transferStats['total_count'], 2, '0', STR_PAD_LEFT);
+        $totalAmount = $transferStats['total_amount'] > 0
+            ? number_format($transferStats['total_amount'], 0, ',', ',') . 'đ'
+            : '0đ';
+
+        $report = "---\n";
+        $report .= "Báo cáo CK {$formattedDate}\n";
+        $report .= "SL: {$sl}\n";
+        $report .= "Tổng: {$totalAmount}\n";
+
+        if (empty($transferStats['images'])) {
+            $report .= "Không có ảnh CK\n";
+        }
+
+        $report .= "---";
+        return $report;
+    }
+
+    /**
+     * Rút gọn tên khóa học theo quy tắc: bỏ "Adobe", "Khóa học"; cơ bản -> cb, nâng cao -> nc, Tin học văn phòng -> THVP
+     */
+    private function shortenCourseName($courseName)
+    {
+        $name = trim($courseName);
+
+        if ($name === '') {
+            return 'Chưa xác định';
+        }
+
+        $replacements = [
+            'Adobe' => '',
+            'Khóa học' => '',
+            'khoa hoc' => '',
+            'Cơ bản' => 'cb',
+            'co ban' => 'cb',
+            'Nâng cao' => 'nc',
+            'nang cao' => 'nc',
+            'Tin học văn phòng' => 'THVP',
+            'Tin hoc van phong' => 'THVP'
+        ];
+
+        foreach ($replacements as $search => $replace) {
+            $name = str_ireplace($search, $replace, $name);
+        }
+
+        // Gom khoảng trắng thừa
+        $name = preg_replace('/\s+/', ' ', trim($name));
+
+        return $name !== '' ? $name : 'Chưa xác định';
+    }
+
+    /**
+     * Chuẩn hóa tên loại thanh toán theo yêu cầu hiển thị
+     */
+    private function mapPaymentContent($paymentContent)
+    {
+        switch ($paymentContent) {
+            case 'deposit':
+            case 'accounting_deposit':
+                return 'Cọc HP';
+            case 'full_payment_after_deposit':
+            case 'full_payment':
+                return 'Thanh toán đủ';
+            case 'l1_payment':
+                return 'Thanh toán L1';
+            case 'l2_payment':
+                return 'Thanh toán L2';
+            case 'l3_payment':
+                return 'Thanh toán L3';
+            default:
+                return !empty($paymentContent)
+                    ? str_replace('_', ' ', ucfirst($paymentContent))
+                    : 'Không rõ';
+        }
+    }
+
     private function slugify($text)
     {
         // Remove Vietnamese accents

@@ -51,6 +51,8 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         if (strpos($currentPath, '/dashboard') !== false) return 'dashboard';
         if (strpos($currentPath, '/students') !== false) return 'students';
         if (strpos($currentPath, '/courses') !== false) return 'courses';
+        if (strpos($currentPath, '/reports/transfer-closing') !== false) return 'transfer_closing';
+        if (strpos($currentPath, '/reports/daily-closing') !== false) return 'daily_closing';
         if (strpos($currentPath, '/reports') !== false) return 'reports';
         if (strpos($currentPath, '/revenue') !== false) return 'revenue';
         if (strpos($currentPath, '/certificates') !== false) return 'certificates';
@@ -120,6 +122,20 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                             <span>Cấp chứng nhận</span>
                         </a>
                     </div>
+                    <?php if ($currentUser['role'] === 'admin'): ?>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('reports/daily-closing') ?>" class="nav-link <?= isActive('daily_closing') ?>">
+                            <i class="fas fa-file-contract"></i>
+                            <span>Báo cáo chốt</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('reports/transfer-closing') ?>" class="nav-link <?= isActive('transfer_closing') ?>">
+                            <i class="fas fa-money-check-alt"></i>
+                            <span>Báo cáo CK</span>
+                        </a>
+                    </div>
+                    <?php endif; ?>
                     <div class="nav-item">
                         <a href="<?= $buildUrl('completion-slips') ?>" class="nav-link <?= isActive('completion_slips') ?>">
                             <i class="fas fa-user-check"></i>
