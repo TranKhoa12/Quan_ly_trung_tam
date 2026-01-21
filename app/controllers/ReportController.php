@@ -968,7 +968,7 @@ class ReportController extends BaseController
         $formattedDate = date('d/m/Y', strtotime($date));
         
         $report = "---\n";
-        $report .= "Báo cáo ngày {$formattedDate}\n";
+        $report .= "Báo cáo ngày {$formattedDate} (rút gọn)\n";
         $report .= "SL đến: {$studentStats['arrivals']}, SL chốt: {$studentStats['closed']}.\n";
         $totalFormatted = ($revenueStats['total_count'] <= 0)
             ? '0'
@@ -976,12 +976,12 @@ class ReportController extends BaseController
         $report .= "Tổng Chốt: {$totalFormatted}\n";
         
         // Thêm chi tiết từng giao dịch
-        foreach ($revenueStats['details'] as $index => $detail) {
+        foreach ($revenueStats['details'] as $detail) {
             $courseName = $this->shortenCourseName($detail['course_name'] ?? '');
             $paymentType = $this->mapPaymentContent($detail['payment_content'] ?? '');
-            
-            $report .= str_pad(($index + 1), 2, '0', STR_PAD_LEFT);
-            $report .= " {$courseName} - {$paymentType}\n";
+            $quantity = str_pad($detail['quantity'] ?? 1, 2, '0', STR_PAD_LEFT); // Hiển thị số lượng thay vì số thứ tự
+
+            $report .= "{$quantity} {$courseName} - {$paymentType}\n";
         }
         
         $report .= "---";
@@ -1105,6 +1105,8 @@ class ReportController extends BaseController
         }
 
         $replacements = [
+            'Cơ bản và nâng cao' => 'cb-nc',
+            'co ban va nang cao' => 'cb-nc',
             'Adobe' => '',
             'Khóa học' => '',
             'khoa hoc' => '',
@@ -1113,7 +1115,23 @@ class ReportController extends BaseController
             'Nâng cao' => 'nc',
             'nang cao' => 'nc',
             'Tin học văn phòng' => 'THVP',
-            'Tin hoc van phong' => 'THVP'
+            'Tin hoc van phong' => 'THVP',
+            'Phần mềm' => 'pm',
+            'phan mem' => 'pm',
+            'Autocad' => 'cad',
+            'AutoCAD' => 'cad',
+            'Kế toán tổng hợp' => 'KTTH',
+            'Ke toan tong hop' => 'KTTH',
+            'Máy Tính' => 'mt',
+            'máy tính' => 'mt',
+            'May Tinh' => 'mt',
+            'Word' => 'W',
+            'Excel' => 'E',
+            'PowerPoint' => 'PP',
+            'Power Point' => 'PP',
+            'Powerpoint' => 'PP',
+            ' và ' => ' & ',
+            ' Va ' => ' & '
         ];
 
         foreach ($replacements as $search => $replace) {
@@ -1137,17 +1155,20 @@ class ReportController extends BaseController
                 return 'Cọc HP';
             case 'full_payment_after_deposit':
             case 'full_payment':
-                return 'Thanh toán đủ';
+                return 'TT đủ';
             case 'l1_payment':
-                return 'Thanh toán L1';
+                return 'TT L1';
             case 'l2_payment':
-                return 'Thanh toán L2';
+                return 'TT L2';
             case 'l3_payment':
-                return 'Thanh toán L3';
+                return 'TT L3';
             default:
-                return !empty($paymentContent)
-                    ? str_replace('_', ' ', ucfirst($paymentContent))
-                    : 'Không rõ';
+                if (!empty($paymentContent)) {
+                    $label = str_replace('_', ' ', ucfirst($paymentContent));
+                    $label = str_ireplace('Thanh toán', 'TT', $label);
+                    return preg_replace('/\s+/', ' ', trim($label));
+                }
+                return 'Không rõ';
         }
     }
 
