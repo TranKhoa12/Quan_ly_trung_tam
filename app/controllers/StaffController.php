@@ -50,8 +50,15 @@ class StaffController extends BaseController {
                 'hire_date' => $_POST['hire_date'] ?? '',
                 'salary' => $_POST['salary'] ?? '',
                 'status' => $_POST['status'] ?? 'active',
+                'role' => $_POST['role'] ?? 'staff', // phân quyền khi tạo nhân viên
                 'notes' => $_POST['notes'] ?? ''
             ];
+
+            // Chuẩn hóa role, chỉ cho phép admin hoặc staff
+            $allowedRoles = ['admin', 'staff'];
+            if (!in_array($data['role'], $allowedRoles, true)) {
+                $data['role'] = 'staff';
+            }
             
             // Validation
             if (empty($data['full_name']) || empty($data['username']) || empty($data['email']) || empty($data['password'])) {
@@ -120,8 +127,15 @@ class StaffController extends BaseController {
                 'hire_date' => $_POST['hire_date'] ?? '',
                 'salary' => $_POST['salary'] ?? '',
                 'status' => $_POST['status'] ?? 'active',
+                'role' => $_POST['role'] ?? 'staff',
                 'notes' => $_POST['notes'] ?? ''
             ];
+
+            // Chuẩn hóa role khi cập nhật
+            $allowedRoles = ['admin', 'staff'];
+            if (!in_array($data['role'], $allowedRoles, true)) {
+                $data['role'] = 'staff';
+            }
             
             // Handle password update
             if (!empty($_POST['password'])) {

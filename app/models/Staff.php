@@ -58,7 +58,11 @@ class Staff extends BaseModel {
             }
         }
         
-        $data['role'] = 'staff';
+        // Giữ role nếu hợp lệ, mặc định staff
+        $allowedRoles = ['admin', 'staff'];
+        $data['role'] = in_array($data['role'] ?? 'staff', $allowedRoles, true)
+            ? $data['role']
+            : 'staff';
         $data['created_at'] = date('Y-m-d H:i:s');
         
         return $this->create($data);
@@ -90,6 +94,14 @@ class Staff extends BaseModel {
             }
         }
         
+        // Giữ role nếu hợp lệ khi cập nhật
+        if (isset($data['role'])) {
+            $allowedRoles = ['admin', 'staff'];
+            $data['role'] = in_array($data['role'], $allowedRoles, true)
+                ? $data['role']
+                : 'staff';
+        }
+
         $data['updated_at'] = date('Y-m-d H:i:s');
         
         return $this->update($id, $data);

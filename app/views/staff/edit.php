@@ -136,6 +136,16 @@ ob_start();
                                 </select>
                             </div>
 
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="fas fa-user-shield text-primary"></i> Phân quyền
+                                </label>
+                                <select class="form-select" name="role">
+                                    <option value="staff" <?= ($staff['role'] === 'staff') ? 'selected' : '' ?>>Nhân viên</option>
+                                    <option value="admin" <?= ($staff['role'] === 'admin') ? 'selected' : '' ?>>Quản trị viên</option>
+                                </select>
+                            </div>
+
                             <div class="col-12">
                                 <label class="form-label">
                                     <i class="fas fa-map-marker-alt text-primary"></i> Địa chỉ
