@@ -20,7 +20,11 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light only">
     <title><?= $pageTitle ?? 'Dashboard' ?> - Quản lý trung tâm</title>
-    
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="<?= $buildUrl('assets/favicon.svg') ?>">
+    <link rel="shortcut icon" href="<?= $buildUrl('assets/favicon.svg') ?>">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
