@@ -1527,4 +1527,108 @@ class TeachingShiftController extends BaseController
             'user' => $user
         ]);
     }
+
+    // =====================================================
+    // Quản lý loại ca dạy (teaching_shifts table)
+    // =====================================================
+
+    public function manageShiftTypes()
+    {
+        $this->requireAdmin();
+        $shifts = $this->shiftModel->getAllShifts();
+
+        $this->view('teaching_shifts/manage_shifts', [
+            'shifts' => $shifts
+        ]);
+    }
+
+    public function storeShiftType()
+    {
+        $this->requireAdmin();
+        try {
+            $name      = trim($_POST['name'] ?? '');
+            $startTime = trim($_POST['start_time'] ?? '');
+            $endTime   = trim($_POST['end_time'] ?? '');
+            $rate      = (float)($_POST['hourly_rate'] ?? 50);
+
+            if (empty($name) || empty($startTime) || empty($endTime)) {
+                throw new Exception('Vui lòng điền đầy đủ tên ca, giờ bắt đầu và giờ kết thúc.');
+            }
+            if (strtotime($endTime) <= strtotime($startTime)) {
+                throw new Exception('Giờ kết thúc phải lớn hơn giờ bắt đầu.');
+            }
+
+            $this->shiftModel->createShiftType([
+                'name'        => $name,
+                'start_time'  => $startTime,
+                'end_time'    => $endTime,
+                'hourly_rate' => $rate
+            ]);
+
+            $_SESSION['success'] = "Đã thêm ca dạy \"$name\" thành công!";
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+        }
+        $this->redirect('/Quan_ly_trung_tam/public/teaching-shifts/manage');
+    }
+
+    public function updateShiftType($id)
+    {
+        $this->requireAdmin();
+        try {
+            $shift = $this->shiftModel->find($id);
+            if (!$shift) {
+                throw new Exception('Không tìm thấy ca dạy.');
+            }
+
+            $name      = trim($_POST['name'] ?? '');
+            $startTime = trim($_POST['start_time'] ?? '');
+            $endTime   = trim($_POST['end_time'] ?? '');
+            $rate      = (float)($_POST['hourly_rate'] ?? 50);
+
+            if (empty($name) || empty($startTime) || empty($endTime)) {
+                throw new Exception('Vui lòng điền đầy đủ thông tin ca dạy.');
+            }
+            if (strtotime($endTime) <= strtotime($startTime)) {
+                throw new Exception('Giờ kết thúc phải lớn hơn giờ bắt đầu.');
+            }
+
+            $this->shiftModel->updateShiftType($id, [
+                'name'        => $name,
+                'start_time'  => $startTime,
+                'end_time'    => $endTime,
+                'hourly_rate' => $rate
+            ]);
+
+            $_SESSION['success'] = "Đã cập nhật ca dạy \"$name\" thành công!";
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+        }
+        $this->redirect('/Quan_ly_trung_tam/public/teaching-shifts/manage');
+    }
+
+    public function toggleShiftType($id)
+    {
+        $this->requireAdmin();
+        try {
+            $shift = $this->shiftModel->find($id);
+            if (!$shift) {
+                throw new Exception('Không tìm thấy ca dạy.');
+            }
+
+            // Nếu muốn Vô hiệu hoá nhưng có đăng ký pending/approved → cảnh báo
+            if ((int)$shift['is_active'] === 1 && $this->shiftModel->hasRegistrations($id)) {
+                // Vẫn cho phép ẩn, nhưng ghi chú
+                $this->shiftModel->toggleActive($id);
+                $_SESSION['success'] = 'Đã vô hiệu hoá ca dạy. Các đăng ký cũ vẫn được giữ nguyên.';
+            } else {
+                $this->shiftModel->toggleActive($id);
+                $newState = (int)$shift['is_active'] === 1 ? 'vô hiệu hoá' : 'kích hoạt';
+                $_SESSION['success'] = "Đã $newState ca dạy thành công!";
+            }
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+        }
+        $this->redirect('/Quan_ly_trung_tam/public/teaching-shifts/manage');
+    }
 }

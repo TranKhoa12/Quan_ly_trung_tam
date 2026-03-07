@@ -28,6 +28,9 @@ ob_start();
         <p class="text-muted mb-0">Xem, lọc và duyệt ca đăng ký của toàn bộ nhân viên</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="<?= $basePath ?>/teaching-shifts/manage" class="btn btn-outline-info">
+            <i class="fas fa-layer-group me-2"></i>Quản lý loại ca
+        </a>
         <a href="<?= $basePath ?>/teaching-shifts/admin/create" class="btn btn-success">
             <i class="fas fa-plus me-2"></i>Đăng ký ca dạy
         </a>

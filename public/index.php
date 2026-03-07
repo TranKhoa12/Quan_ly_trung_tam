@@ -152,6 +152,12 @@ $router->post('/teaching-shifts/{id}/cancel', 'TeachingShift@cancel');
 $router->post('/teaching-shifts/{id}/status', 'TeachingShift@updateStatus');
 $router->post('/teaching-shifts/{id}/delete', 'TeachingShift@delete');
 
+// Teaching shift type management (Admin - quản lý loại ca)
+$router->get('/teaching-shifts/manage', 'TeachingShift@manageShiftTypes');
+$router->post('/teaching-shifts/manage/store', 'TeachingShift@storeShiftType');
+$router->post('/teaching-shifts/manage/{id}/update', 'TeachingShift@updateShiftType');
+$router->post('/teaching-shifts/manage/{id}/toggle', 'TeachingShift@toggleShiftType');
+
 // Staff shift statistics routes
 $router->get('/staff/shift-stats', 'StaffShiftStats@index');
 $router->get('/staff/shift-stats/export', 'StaffShiftStats@exportExcel');
