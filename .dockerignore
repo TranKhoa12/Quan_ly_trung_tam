@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Docker files (không cần copy vào image)
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+docker/
+
+# Dependencies (sẽ được cài lại trong image)
+vendor/
+
+# Environment (bảo mật - không đưa vào image)
+.env
+.env.local
+.env.production
+
+# Logs & cache
+storage/logs/*.log
+public/uploads/*
+
+# Development files
+*.md
+*.sql
+database/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace

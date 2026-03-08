@@ -5,14 +5,14 @@
 
 return [
     'app_name' => 'Quản Lý Trung Tâm',
-    'app_url' => 'http://localhost/Quan_ly_trung_tam/public',
+    'app_url' => $_ENV['APP_URL'] ?? getenv('APP_URL') ?: 'http://localhost/Quan_ly_trung_tam/public',
     'timezone' => 'Asia/Ho_Chi_Minh',
     
     'database' => [
-        'host' => 'localhost',
-        'database' => 'quan_ly_trung_tam',
-        'username' => 'root',
-        'password' => '',
+        'host'     => $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost',
+        'database' => $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'quan_ly_trung_tam',
+        'username' => $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root',
+        'password' => $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '',
         'charset' => 'utf8mb4',
         'options' => [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
