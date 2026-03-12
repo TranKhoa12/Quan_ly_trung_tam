@@ -4,7 +4,7 @@ useModernLayout('Nhật ký hoạt động', function() use ($logs, $filters, $u
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col">
-            <h2><i class="bi bi-journal-text"></i> Nhật ký hoạt động hệ thống</h2>
+            <h2><i class="bi bi-journal-text"></i> Nhật ký hoạt động hệ thống Trung tâm</h2>
             <p class="text-muted">Theo dõi và giám sát mọi hoạt động của nhân viên trong hệ thống</p>
         </div>
         <div class="col-auto">
