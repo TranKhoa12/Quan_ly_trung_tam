@@ -214,5 +214,14 @@ $router->api('GET', '/certificates', 'Certificate@apiIndex');
 $router->api('POST', '/certificates', 'Certificate@apiStore');
 $router->api('PUT', '/certificates/{id}', 'Certificate@apiUpdate');
 
+// AI Chat API (yêu cầu đăng nhập, xử lý trong ChatController)
+$router->post('/api/chat', 'Chat@message');
+
+// AI Chat Management (Admin only)
+$router->get('/ai-chat/manage', 'AiChat@manage');
+$router->post('/ai-chat/save-notes', 'AiChat@saveNotes');
+$router->post('/ai-chat/upload-knowledge', 'AiChat@uploadKnowledgeFile');
+$router->post('/ai-chat/delete-knowledge', 'AiChat@deleteKnowledgeFile');
+
 // Dispatch the request
 $router->dispatch();

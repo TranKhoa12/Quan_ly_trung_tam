@@ -67,6 +67,7 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         if (strpos($currentPath, '/teaching-shifts/admin') !== false) return 'teaching_shifts_admin';
         if (strpos($currentPath, '/teaching-shifts') !== false) return 'teaching_shifts';
         if (strpos($currentPath, '/admin-logs') !== false) return 'admin_logs';
+        if (strpos($currentPath, '/ai-chat') !== false) return 'ai_chat';
         if (strpos($currentPath, '/staff') !== false) return 'staff';
         return 'dashboard';
     }
@@ -204,6 +205,12 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
                         <a href="<?= $buildUrl('admin-logs') ?>" class="nav-link <?= isActive('admin_logs') ?>">
                             <i class="fas fa-history"></i>
                             <span>Nhật ký hoạt động</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="<?= $buildUrl('ai-chat/manage') ?>" class="nav-link <?= isActive('ai_chat') ?>">
+                            <i class="fas fa-robot"></i>
+                            <span>Dữ liệu AI Chat</span>
                         </a>
                     </div>
                 </div>
@@ -722,5 +729,7 @@ $appBasePathString = $appBasePath ? $appBasePath : '';
         }
     }
     </style>
+
+    <?php include APP_PATH . '/views/partials/chat_widget.php'; ?>
 </body>
 </html>

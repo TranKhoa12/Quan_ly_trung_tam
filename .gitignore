@@ -26,3 +26,9 @@ Thumbs.db
 
 # Environment
 .env
+
+# AI config
+config/ai.php
+
+# Bảng giá (dữ liệu kinh doanh nội bộ)
+data/
